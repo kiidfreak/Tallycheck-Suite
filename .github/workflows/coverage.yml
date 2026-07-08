@@ -1,0 +1,54 @@
+name: Coverage
+
+# On PRs: run the suite with coverage and post the results as a comment.
+# On push to dev: regenerate the coverage badge SVG and commit it back so the
+# README badge stays current.
+on:
+  pull_request:
+    branches: [dev]
+  push:
+    branches: [dev]
+  workflow_dispatch: # allow manual runs from the Actions tab
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # required to commit the badge on push to dev
+      pull-requests: write # required to post/update the PR coverage comment
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Skip the nx cache so coverage files are always (re)generated;
+      # lcov.info and coverage-summary.json are written under coverage/apps/intranet.
+      - name: Test with coverage
+        run: npx nx test intranet --coverage --passWithNoTests --skip-nx-cache
+
+      - name: Post coverage comment
+        if: github.event_name == 'pull_request'
+        uses: MishaKav/jest-coverage-comment@v1.0.27
+        with:
+          title: Intranet Coverage
+          summary-title: Intranet Coverage
+          coverage-summary-path: ./coverage/apps/intranet/coverage-summary.json
+
+      - name: Generate coverage badge
+        if: github.event_name == 'push'
+        run: npx --yes coverage-badges-cli --source coverage/apps/intranet/coverage-summary.json --output badges/coverage.svg
+
+      # Commit the regenerated badge back to dev. "[skip ci]" stops this push
+      # from re-triggering the workflows (avoids a commit loop).
+      - name: Commit coverage badge
+        if: github.event_name == 'push'
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: update coverage badge [skip ci]"
+          file_pattern: badges/coverage.svg

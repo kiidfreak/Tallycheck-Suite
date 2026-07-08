@@ -1,0 +1,246 @@
+@if (show_banner()) {
+  <div class="not-checked-in-banner">
+    <div class="banner-content">
+      <omni-icon name="alert-triangle" [size]="18"></omni-icon>
+      <span>{{ greeting() }}, {{ user()?.first_name || 'User' }} — you haven't checked in yet today.</span>
+    </div>
+    <button class="banner-btn" (click)="scrollToCheckIn()">View</button>
+  </div>
+}
+
+@if (show_checkout_warning()) {
+  <div class="checkout-warning-banner">
+    <div class="banner-content">
+      <lucide-icon name="alert-triangle" [size]="18" class="pulse-icon"></lucide-icon>
+      <span>You will be checked out automatically in <strong>{{ countdown_seconds() }}s</strong>.</span>
+    </div>
+    <div class="banner-actions">
+      <button class="banner-action-btn" (click)="extend_shift()">Extend by 1 hour</button>
+    </div>
+  </div>
+}
+
+<header class="page-head">
+  <div>
+    <p class="eyebrow">{{ greeting() }}</p>
+    <h1>Welcome back, {{ user()?.first_name || 'User' }}</h1>
+  </div>
+</header>
+
+<section class="stats">
+  <omni-stat-card label="Your hours this week" [value]="hours_this_week() + 'h'" [delta]="get_hours_delta()" />
+  <omni-stat-card label="Attendance streak" [value]="streak() + 'd'" delta="active days" deltaTone="success" />
+  <omni-stat-card label="Team present" infoText="Colleagues in your department currently checked in" [value]="team_present() + '/' + team_total()" delta="In your department" />
+</section>
+
+<div class="dashboard-layout">
+  <div class="check-in-col">
+    @if (active_record(); as record) {
+      <omni-card title="Your active shift" [subtitle]="'Started at ' + format_time(record.clock_in)">
+        <div card-right>
+        </div>
+        
+        <div class="check-in-form">
+          <app-clock-out-form
+            [loading]="loading()"
+            [startTime]="record.clock_in"
+            (clock_out)="clock_out($event)"
+          />
+
+          <div class="text-center">
+            <a href="javascript:void(0)" class="view-all-link" (click)="toggle_timesheet()">
+              {{ show_timesheet() ? 'Hide attendance history' : 'View attendance history' }} &rarr;
+            </a>
+          </div>
+        </div>
+      </omni-card>
+    } @else {
+      <omni-card title="Check in for today" [subtitle]="current_date_str()">
+        <div card-right>
+          <omni-pill tone="warning">Not checked in</omni-pill>
+        </div>
+        
+        <div class="check-in-form">
+          <app-clock-in-form
+            [loading]="loading()"
+            (clock_in)="clock_in($event)"
+          />
+
+          <div class="text-center">
+            <a href="javascript:void(0)" class="view-all-link" (click)="toggle_timesheet()">
+              {{ show_timesheet() ? 'Hide attendance history' : 'View attendance history' }} &rarr;
+            </a>
+          </div>
+        </div>
+      </omni-card>
+    }
+  </div>
+  
+  <div class="right-col">
+    @if (!show_timesheet()) {
+      <div class="dashboard-right-content h-full">
+        <omni-card title="Announcements & Updates" class="announcements-card">
+          <div class="announcement-list">
+            @for (ann of announcements; track ann.title) {
+              <div class="announcement-item">
+                <div class="ann-header">
+                  <h4>{{ ann.title }}</h4>
+                  @if (ann.isNew) {
+                    <span class="new-badge">● New</span>
+                  }
+                </div>
+                <span class="ann-meta">{{ ann.meta }}</span>
+                <p class="ann-desc">{{ ann.desc }}</p>
+              </div>
+            }
+          </div>
+        </omni-card>
+      </div>
+    }
+
+    @if (show_timesheet()) {
+      <div class="timesheet-section">
+        <omni-card title="My Attendance" subtitle="Recent check-in history">
+          <div card-right>
+            <omni-button variant="ghost" size="sm" (click)="toggle_timesheet()">Close attendance</omni-button>
+          </div>
+          <div class="filter-row">
+            <div class="filter-field">
+              <label for="start_date">Start Date</label>
+              <input type="date" id="start_date" [(ngModel)]="start_date" />
+            </div>
+            <div class="filter-field">
+              <label for="end_date">End Date</label>
+              <input type="date" id="end_date" [(ngModel)]="end_date" />
+            </div>
+            <div class="filter-buttons">
+              <omni-button variant="primary" size="sm" (click)="apply_filters()">Apply</omni-button>
+              <omni-button variant="secondary" size="sm" (click)="clear_filters()">Clear</omni-button>
+            </div>
+          </div>
+
+          @if (records().length > 0) {
+            <div class="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Clock In</th>
+                    <th>Clock Out</th>
+                    <th>Duration</th>
+                    <th>Status</th>
+                    <th>Source</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (record of records(); track record.id) {
+                    <tr>
+                      <td>{{ record.work_date | date:'dd MMM yyyy' }}</td>
+                      <td>{{ format_time(record.clock_in) }}</td>
+                      <td>{{ record.clock_out ? format_time(record.clock_out) : '--:--' }}</td>
+                      <td>{{ record.worked_hours !== null ? record.worked_hours + ' hrs' : 'Active' }}</td>
+                      <td>
+                        @if (record.status === 'open') {
+                          <omni-pill tone="success">Active</omni-pill>
+                        } @else if (record.status === 'closed') {
+                          <omni-pill tone="info">Clocked Out</omni-pill>
+                        } @else if (record.status === 'corrected') {
+                          <omni-pill tone="info">Corrected</omni-pill>
+                        } @else {
+                          <omni-pill tone="warning">No Record</omni-pill>
+                        }
+                      </td>
+                      <td><span class="source-tag">{{ record.source }}</span></td>
+                      <td class="notes-cell" [title]="record.notes || ''">{{ record.notes || '—' }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <div class="pagination-controls">
+              <span class="page-info">
+                Showing page <strong>{{ page() }}</strong> of <strong>{{ max_pages() }}</strong> ({{ total_records() }} total records)
+              </span>
+              <div class="page-buttons">
+                <omni-button variant="secondary" size="sm" (click)="prev_page()" [disabled]="page() === 1 || loading()">
+                  Previous
+                </omni-button>
+                <omni-button variant="secondary" size="sm" (click)="next_page()" [disabled]="page() === max_pages() || loading()">
+                  Next
+                </omni-button>
+              </div>
+            </div>
+          } @else {
+            <div class="empty-timesheet">
+              No attendance records found for this period.
+            </div>
+          }
+        </omni-card>
+      </div>
+    }
+  </div>
+</div>
+
+@if (show_attendance_modal()) {
+  <div class="attendance-modal-backdrop" tabindex="0" (click)="show_attendance_modal.set(false)" (keydown.enter)="show_attendance_modal.set(false)">
+    <div class="attendance-modal" tabindex="0" (click)="$event.stopPropagation()" (keydown.enter)="$event.stopPropagation()">
+      <div class="modal-header">
+        <button class="modal-close-btn" (click)="dismiss_modal()">
+          <lucide-icon name="x" [size]="20"></lucide-icon>
+        </button>
+        <div class="header-icon">
+          <lucide-icon name="fingerprint" [size]="24" color="var(--primary-color, white)"></lucide-icon>
+        </div>
+        <div class="header-titles">
+          <h2 class="modal-title">
+            {{ modal_type() === 'clock_in' ? 'Check in for today' : 'Check out for today' }}
+          </h2>
+          <p class="modal-subtitle">
+            {{ modal_type() === 'clock_in' ? 'Confirm your attendance to continue.' : 'Time to wrap up your shift.' }}
+          </p>
+        </div>
+        <div class="header-time">
+          <div class="time-sub">{{ current_date_str().split(' · ')[0] || '' }}</div>
+          <div class="time-main">{{ current_date_str().split(' · ')[1] || '00:00' }}</div>
+        </div>
+      </div>
+      <div class="modal-body">
+        @if (modal_type() === 'clock_in') {
+          @if (is_past_cutoff()) {
+            <div class="cutoff-warning">
+              <lucide-icon name="triangle-alert" [size]="24" class="warning-icon"></lucide-icon>
+              <div class="cutoff-text">
+                <h3>Check-in Cutoff Passed</h3>
+                <p>It is past the {{ cutoff_time_label() }} daily check-in cutoff. Please contact HR to log your hours manually for today.</p>
+              </div>
+            </div>
+            <div class="full-width-btn mb-4">
+              <omni-button variant="secondary" [disabled]="true">
+                Check-in Disabled
+              </omni-button>
+            </div>
+          } @else {
+            <app-clock-in-form
+              [loading]="loading()"
+              (clock_in)="clock_in($event)"
+            />
+          }
+        } @else {
+          <app-clock-out-form
+            [loading]="loading()"
+            [startTime]="active_record()?.clock_in || ''"
+            (clock_out)="clock_out($event)"
+          />
+          <div class="modal-footer-box">
+            <span class="footer-question">Still working?</span>
+            <button class="footer-action-btn" (click)="snooze_clock_out()">
+              <lucide-icon name="clock" [size]="16"></lucide-icon> Remind me in 1 hour
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+}

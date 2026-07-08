@@ -1,0 +1,104 @@
+<div class="page-container">
+  <div class="page-header">
+    <div class="title-section">
+      <h1>All Attendance Records</h1>
+      <p>HR View: Manage and audit attendance history.</p>
+    </div>
+    <div class="actions">
+      <omni-button variant="primary" (click)="openManualEntry()">
+        <omni-icon name="plus" [size]="16"></omni-icon> Manual Entry
+      </omni-button>
+    </div>
+  </div>
+
+  <div class="table-container card">
+    <table class="omni-table">
+      <thead>
+        <tr>
+          <th>Employee ID</th>
+          <th>Work Date</th>
+          <th>Check In</th>
+          <th>Check Out</th>
+          <th>Status</th>
+          <th>Source</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (rec of records(); track rec.id) {
+          <tr>
+            <td>{{ rec.employee_id }}</td>
+            <td>{{ rec.work_date }}</td>
+            <td>{{ rec.clock_in | date:'shortTime' }}</td>
+            <td>{{ rec.clock_out ? (rec.clock_out | date:'shortTime') : '--' }}</td>
+            <td>
+              <omni-pill [tone]="rec.status === 'open' ? 'success' : (rec.status === 'corrected' ? 'warning' : '')">
+                {{ rec.status }}
+              </omni-pill>
+            </td>
+            <td>
+              <omni-pill tone="purple">{{ rec.source }}</omni-pill>
+            </td>
+            <td>
+              <div style="display: flex; gap: 8px;">
+                <omni-button variant="ghost" (click)="openEdit(rec)">Edit</omni-button>
+                <omni-button variant="secondary" (click)="openAudit(rec)">Audit Trail</omni-button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="7" class="empty-state">No attendance records found.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Manual Entry Drawer -->
+  @if (isManualEntryOpen()) {
+    <app-manual-entry-form
+      (closeForm)="closeManualEntry()"
+      (submitForm)="submitManualEntry($event)">
+    </app-manual-entry-form>
+  }
+
+  <!-- Edit Drawer -->
+  @if (isEditOpen() && editingRecord()) {
+    <app-edit-record-form
+      [record]="editingRecord()!"
+      (closeForm)="closeEdit()"
+      (submitForm)="submitEdit($event)">
+    </app-edit-record-form>
+  }
+
+  <!-- Audit Trail Modal -->
+  @if (isAuditOpen()) {
+    <div class="drawer-overlay" role="button" tabindex="0" (click)="closeAudit()" (keydown.enter)="closeAudit()" (keydown.space)="closeAudit()"></div>
+    <div class="drawer" style="width: 500px;">
+      <div class="drawer-header">
+        <h2>Audit Trail</h2>
+        <button class="close-btn" (click)="closeAudit()">
+          <omni-icon name="x" [size]="20"></omni-icon>
+        </button>
+      </div>
+      <div class="drawer-body" style="background: #f9fafb;">
+        @for (log of auditTrail(); track log.id) {
+          <div class="audit-item" style="background: white; padding: 16px; border-radius: 8px; margin-bottom: 12px; border: 1px solid var(--border-color);">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <strong>{{ log.changed_by }}</strong>
+              <span style="color: var(--text-muted); font-size: 12px;">{{ log.changed_at | date:'medium' }}</span>
+            </div>
+            <p style="margin: 0 0 8px 0; font-size: 14px;"><strong>Reason:</strong> {{ log.reason_for_change }}</p>
+            <div style="font-size: 13px; color: var(--text-secondary); background: #f3f4f6; padding: 8px; border-radius: 4px;">
+              <div>Previous In: {{ log.previous_clock_in ? (log.previous_clock_in | date:'medium') : 'None' }}</div>
+              <div>Previous Out: {{ log.previous_clock_out ? (log.previous_clock_out | date:'medium') : 'None' }}</div>
+            </div>
+          </div>
+        } @empty {
+          <div class="empty-state">No edits have been made to this record.</div>
+        }
+      </div>
+    </div>
+  }
+</div>

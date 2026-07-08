@@ -1,0 +1,140 @@
+.header {
+  height: var(--header-h);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-6);
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-1);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 340px;
+  max-width: 40vw;
+  padding: 8px 12px;
+  background: var(--bg-sunken);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--fg-3);
+}
+.search input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-family: var(--font-body);
+  font-size: var(--fs-md);
+  color: var(--fg-1);
+  width: 100%;
+}
+.search:focus-within {
+  background: var(--bg-surface);
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow-focus);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.icon-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--fg-2);
+  cursor: pointer;
+}
+.icon-btn:hover {
+  background: var(--bg-hover);
+}
+.icon-btn .ping {
+  position: absolute;
+  top: 8px;
+  right: 9px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--adept-red-600);
+  border: 2px solid var(--bg-surface);
+}
+
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 4px 8px 4px 4px;
+}
+.user-chip .avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-family: var(--font-display);
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-sm);
+  background: var(--adept-navy-100);
+  color: var(--adept-navy-700);
+}
+.user-chip .avatar.success {
+  background: var(--success-100);
+  color: var(--success);
+}
+.user-chip .avatar.warning {
+  background: var(--warning-100);
+  color: var(--warning);
+}
+.user-chip .avatar.purple {
+  background: #ece9fb;
+  color: var(--status-remote);
+}
+.user-meta {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+.user-meta .name {
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-sm);
+  color: var(--fg-1);
+}
+.user-meta .role {
+  font-size: var(--fs-xs);
+  color: var(--fg-3);
+}
+
+/* local copy of the btn-danger primitive for the logout button */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-body);
+  font-weight: var(--fw-semibold);
+  border-radius: var(--radius-lg);
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.btn-sm {
+  padding: 6px 12px;
+  font-size: var(--fs-sm);
+}
+.btn-danger {
+  background: var(--adept-red-600);
+  color: var(--fg-on-red);
+}
+.btn-danger:hover {
+  background: var(--adept-red-700);
+}

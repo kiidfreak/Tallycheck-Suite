@@ -1,0 +1,79 @@
+# Production stack deployed to the server by the CI/CD pipeline.
+#   docker compose -f docker-compose.prod.yml --env-file .env up -d --build
+#
+# Published ports on the host:
+#   80   -> frontend (nginx serving the Angular SPA + /api proxy)
+#   8001 -> backend  (Flask, also reachable internally as backend:5000)
+# Postgres is NOT published to the host (internal network only).
+
+services:
+  db:
+    image: postgres:15.7
+    container_name: omni_intranet_db
+    environment:
+      POSTGRES_USER: ${DATABASE_USER:-omni_intranet_user}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-omni_intranet_pass26}
+      POSTGRES_DB: ${DATABASE_NAME:-omni_intranet}
+    volumes:
+      - omni_intranet_pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER:-omni_intranet_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: apps/intranet/backend/Dockerfile
+    container_name: omni_intranet_backend
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://${DATABASE_USER:-omni_intranet_user}:${DATABASE_PASSWORD:-omni_intranet_pass26}@db:5432/${DATABASE_NAME:-omni_intranet}
+      - AUTH0_DOMAIN=${AUTH0_DOMAIN}
+      - AUTH0_AUDIENCE=${AUTH0_AUDIENCE}
+      - FRONTEND_URL=${FRONTEND_URL:-https://intranet.adept-techno.co.ke}
+      - FLASK_APP=app.py
+      - FLASK_DEBUG=0
+    ports:
+      - "8001:5000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/intranet/Dockerfile
+    container_name: omni_intranet_frontend
+    # No host port — Caddy reaches it internally as frontend:80 and terminates TLS.
+    expose:
+      - "80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: omni_intranet_caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      # DNS A-record for DOMAIN must point at this server before first deploy,
+      # otherwise Let's Encrypt validation fails.
+      - DOMAIN=${DOMAIN:-intranet.adept-techno.co.ke}
+      - ACME_EMAIL=${ACME_EMAIL:-admin@adept-techno.co.ke}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+    restart: unless-stopped
+
+volumes:
+  omni_intranet_pgdata:
+  caddy_data:
+  caddy_config:

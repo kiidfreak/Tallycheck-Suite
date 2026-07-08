@@ -1,0 +1,29 @@
+@import '../login/login.component.scss';
+
+.auth-screen--centered {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  grid-template-columns: none;
+}
+
+.auth-card--narrow {
+  max-width: 400px;
+  width: 100%;
+}
+
+.auth-card--centered-text {
+  text-align: center;
+}
+
+.pending-icon {
+  width: 48px;
+  height: 48px;
+  color: var(--fg-3);
+  margin-bottom: 1rem;
+}
+
+.pending-head {
+  margin-bottom: 2rem;
+}

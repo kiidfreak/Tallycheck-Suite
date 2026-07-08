@@ -1,0 +1,66 @@
+.clock-in-form-inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.form-group label,
+.form-group .label-text {
+  font-size: var(--fs-sm);
+  color: var(--fg-3);
+  font-weight: var(--fw-medium);
+  margin-bottom: var(--space-2);
+  display: block;
+}
+.toggle-group {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.toggle-group button {
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--border-2);
+  background: var(--bg-surface);
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  color: var(--fg-1);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  transition: all 0.2s;
+}
+.toggle-group button:hover {
+  background: var(--bg-sunken);
+}
+.toggle-group button.active {
+  background: var(--adept-navy-700);
+  color: white;
+  border-color: var(--adept-navy-700);
+}
+.location-group button.active {
+  background: #eef2ff;
+  color: var(--adept-navy-700);
+  border-color: #c7d2fe;
+}
+.single-line-note {
+  width: 100%;
+  padding: var(--space-3);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  outline: none;
+}
+.single-line-note:focus {
+  border-color: var(--border-focus);
+}
+
+.full-width-btn {
+  ::ng-deep .btn {
+    width: 100%;
+    justify-content: center;
+    padding: 12px;
+  }
+}

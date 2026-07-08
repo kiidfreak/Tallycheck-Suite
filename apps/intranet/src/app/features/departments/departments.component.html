@@ -1,0 +1,90 @@
+<div class="page-container">
+  <div class="page-header">
+    <div class="title-section">
+      <h1>Departments</h1>
+      <p>Company organizational structure and reporting lines.</p>
+    </div>
+  </div>
+
+  <div class="table-container card">
+    <table class="omni-table">
+      <thead>
+        <tr>
+          <th>Department</th>
+          <th>Parent Department</th>
+          <th>Manager</th>
+          <th>Employees</th>
+          @if (auth.role() === 'hr' || auth.role() === 'super_admin') {
+            <th style="text-align: right;"></th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (dept of departments(); track dept.id) {
+          <tr>
+            <td><strong>{{ dept.name }}</strong></td>
+            <td>{{ dept.parent_department_name || '—' }}</td>
+            <td>{{ dept.manager_name || '—' }}</td>
+            <td>{{ dept.employee_count }}</td>
+            @if (auth.role() === 'hr' || auth.role() === 'super_admin') {
+              <td style="text-align: right;">
+                <omni-button variant="ghost" (click)="openDeptDrawer(dept)" title="Edit Department">
+                  <omni-icon name="ellipsis" [size]="18"></omni-icon>
+                </omni-button>
+              </td>
+            }
+          </tr>
+        } @empty {
+          <tr>
+            <td [attr.colspan]="(auth.role() === 'hr' || auth.role() === 'super_admin') ? 5 : 4" class="empty-state">
+              <p>No departments found.</p>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Drawer for Edit -->
+  @if (isDeptDrawerOpen()) {
+    <div class="drawer-overlay" role="button" tabindex="0" (click)="closeDeptDrawer()" (keydown.enter)="closeDeptDrawer()" (keydown.space)="closeDeptDrawer()"></div>
+    <div class="drawer">
+      <div class="drawer-header">
+        <h2>Edit: {{ editingDepartment()?.name }}</h2>
+        <button class="close-btn" (click)="closeDeptDrawer()">
+          <omni-icon name="x" [size]="20"></omni-icon>
+        </button>
+      </div>
+      <div class="drawer-body">
+        <div class="form-group">
+          <label for="dept-manager">Manager</label>
+          <span class="hint">Assigning a manager will automatically grant them the manager role.</span>
+          <select id="dept-manager" [ngModel]="deptFormManagerId()" (ngModelChange)="deptFormManagerId.set($event)" class="omni-input">
+            <option [ngValue]="null">No Manager</option>
+            @for (emp of employees(); track emp.id) {
+              <option [value]="emp.id">{{ emp.first_name }} {{ emp.last_name }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="dept-parent">Reports To (Parent Department)</label>
+          <span class="hint">Leave blank for top-level departments (e.g. Executive).</span>
+          <select id="dept-parent" [ngModel]="deptFormParentId()" (ngModelChange)="deptFormParentId.set(+$event || null)" class="omni-input">
+            <option [ngValue]="null">None (Top Level)</option>
+            @for (dept of departments(); track dept.id) {
+              @if (dept.id !== editingDepartment()?.id) {
+                <option [value]="dept.id">{{ dept.name }}</option>
+              }
+            }
+          </select>
+        </div>
+      </div>
+      <div class="drawer-footer">
+        <omni-button variant="ghost" (click)="closeDeptDrawer()">Cancel</omni-button>
+        <omni-button variant="primary" (click)="saveDepartment()" [disabled]="deptSaving()">
+          {{ deptSaving() ? 'Saving...' : 'Save' }}
+        </omni-button>
+      </div>
+    </div>
+  }
+</div>

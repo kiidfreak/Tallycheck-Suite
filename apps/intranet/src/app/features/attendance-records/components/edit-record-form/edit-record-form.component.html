@@ -1,0 +1,32 @@
+<div class="drawer-overlay" role="button" tabindex="0" (click)="onClose()" (keydown.enter)="onClose()" (keydown.space)="onClose()"></div>
+<div class="drawer">
+  <div class="drawer-header">
+    <h2>Edit Attendance Record</h2>
+    <button class="close-btn" (click)="onClose()">
+      <omni-icon name="x" [size]="20"></omni-icon>
+    </button>
+  </div>
+  <div class="drawer-body">
+    @if (error) {
+      <div class="error-message" style="color: red; margin-bottom: 16px;">
+        {{ error }}
+      </div>
+    }
+    <div class="form-group">
+      <label for="edit-clock-in">Check In (Local Date/Time) *</label>
+      <input id="edit-clock-in" type="datetime-local" [(ngModel)]="form.clock_in" class="omni-input" required />
+    </div>
+    <div class="form-group">
+      <label for="edit-clock-out">Check Out (Local Date/Time) (Optional)</label>
+      <input id="edit-clock-out" type="datetime-local" [(ngModel)]="form.clock_out" class="omni-input" />
+    </div>
+    <div class="form-group">
+      <label for="edit-reason">Reason for Edit *</label>
+      <textarea id="edit-reason" [(ngModel)]="form.reason" class="omni-input" placeholder="Required reason for compliance" required></textarea>
+    </div>
+  </div>
+  <div class="drawer-footer">
+    <omni-button variant="ghost" (click)="onClose()">Cancel</omni-button>
+    <omni-button variant="primary" (click)="onSubmit()">Save Changes</omni-button>
+  </div>
+</div>

@@ -1,0 +1,31 @@
+@import '../login/login.component.scss';
+
+.auth-screen--centered {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  grid-template-columns: none;
+}
+
+.auth-card--narrow {
+  max-width: 400px;
+  width: 100%;
+}
+
+.auth-input-simple {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  font-family: var(--font-body);
+  font-size: var(--fs-md);
+  color: var(--fg-1);
+  outline: none;
+}
+
+.auth-input-simple:focus {
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow-focus);
+}

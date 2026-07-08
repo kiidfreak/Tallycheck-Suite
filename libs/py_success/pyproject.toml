@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "omni-success"
+version = "0.0.0"
+description = "Shared Python success classes for Omni app backends."
+requires-python = ">=3.11"
+dependencies = [
+    "Flask>=3.0",
+]
+
+[tool.setuptools]
+packages = ["py_success"]
+
+[tool.setuptools.package-dir]
+"py_success" = "."

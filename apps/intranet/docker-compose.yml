@@ -1,0 +1,39 @@
+# Per-app local stack for the intranet (Postgres + Flask backend).
+# Run from this folder:  docker compose up --build
+# The Angular frontend runs separately with `nx serve intranet` (or add a build here later).
+
+services:
+  omni_intranet_db:
+    image: postgres:15.7
+    container_name: omni_intranet_db
+    environment:
+      POSTGRES_USER: omni_intranet_user
+      POSTGRES_PASSWORD: omni_intranet_pass26 # TODO: pass via secrets in CI
+      POSTGRES_DB: omni_intranet
+    ports:
+      - "5433:5432"
+    volumes:
+      - omni_intranet_pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  omni_intranet_backend:
+    build:
+      # Context is the omni-apps root so the image can include libs/py-auth.
+      context: ../..
+      dockerfile: apps/intranet/backend/Dockerfile
+    container_name: omni_intranet_backend
+    ports:
+      - "8001:5000"
+    volumes:
+      - ./backend:/app # live code reload in dev
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://${DATABASE_USER}:${DATABASE_PASSWORD}@${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_NAME}
+      - AUTH0_DOMAIN=${AUTH0_DOMAIN:-}
+      - AUTH0_AUDIENCE=${AUTH0_AUDIENCE:-}
+      - FLASK_APP=app.py
+      - FLASK_DEBUG=1
+    depends_on:
+      - omni_intranet_db
+
+volumes:
+  omni_intranet_pgdata:

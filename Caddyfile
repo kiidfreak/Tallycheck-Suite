@@ -1,0 +1,15 @@
+# Public entrypoint. Caddy auto-provisions a Let's Encrypt TLS cert for DOMAIN
+# and redirects HTTP -> HTTPS automatically. It forwards everything to the
+# frontend nginx container, which serves the Angular SPA and proxies the
+# backend API routes (/auth, /employees, /attendance, /reports, /departments).
+
+{$DOMAIN} {
+	encode zstd gzip
+	tls {$ACME_EMAIL}
+
+	reverse_proxy frontend:80 {
+		header_up Host {host}
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+	}
+}

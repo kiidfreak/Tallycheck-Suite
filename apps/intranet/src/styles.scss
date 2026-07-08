@@ -1,0 +1,7 @@
+/* Intranet global styles.
+   Pulls in the shared Omni design tokens + base resets (the single source of
+   styling truth — ported from the prototype's colors_and_type.css).
+   Resolved via build option stylePreprocessorOptions.includePaths: ["libs"]. */
+@use 'theme/src/styles' as *;
+
+/* App-specific global overrides go below this line. */

@@ -1,0 +1,105 @@
+name: CI/CD — Intranet
+
+# Build & test in CI, then deploy the Docker stack to the server over SSH.
+on:
+  push:
+    branches: [dev]
+    
+  workflow_dispatch: # allow manual runs from the Actions tab
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ----- 1. Validate: lint, test and build the app in CI -----
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npx nx lint intranet
+
+      - name: Test
+        run: npx nx test intranet --passWithNoTests
+
+      - name: Production build
+        run: npx nx build intranet --configuration=production
+
+  # ----- 2. Deploy: ship the code and (re)build the Docker stack on the server -----
+  deploy:
+    needs: build-test
+    runs-on: ubuntu-latest
+    # Only deploy on real pushes / manual runs to dev, never on forks.
+    if: github.ref == 'refs/heads/dev'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Write server .env from secret
+        run: |
+          # Falls back to docker-compose.prod.yml defaults if the secret is empty.
+          printf '%s' "${{ secrets.PROD_ENV }}" > .env
+
+      - name: Package deploy bundle
+        run: |
+          # Write the archive OUTSIDE the working dir so tar doesn't see the
+          # output file appear mid-read ("tar: .: file changed as we read it").
+          tar czf "$RUNNER_TEMP/deploy.tar.gz" \
+            --exclude='./node_modules' \
+            --exclude='./dist' \
+            --exclude='./.git' \
+            --exclude='./.angular' \
+            --exclude='./.nx' \
+            .
+          mv "$RUNNER_TEMP/deploy.tar.gz" deploy.tar.gz
+
+      - name: Copy bundle to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: ${{ secrets.SSH_PORT || '22' }}
+          source: deploy.tar.gz
+          target: /opt/omni
+
+      - name: Deploy on server
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: ${{ secrets.SSH_PORT || '22' }}
+          command_timeout: 20m
+          script: |
+            set -euo pipefail
+
+            # Install Docker (Engine + compose plugin) on first deploy if missing.
+            if ! command -v docker >/dev/null 2>&1; then
+              echo "Docker not found — installing via get.docker.com ..."
+              curl -fsSL https://get.docker.com | sh
+            fi
+            # Make sure the daemon is up (systemd hosts).
+            systemctl enable --now docker 2>/dev/null || true
+
+            cd /opt/omni
+            tar xzf deploy.tar.gz
+            rm -f deploy.tar.gz
+
+            # Build & (re)start the stack.
+            docker compose -f docker-compose.prod.yml --env-file .env up -d --build
+
+            # Apply database migrations.
+            docker compose -f docker-compose.prod.yml exec -T backend flask db upgrade
+
+            # Clean up dangling images to save disk.
+            docker image prune -f

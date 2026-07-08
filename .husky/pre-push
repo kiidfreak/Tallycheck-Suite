@@ -1,0 +1,46 @@
+#!/usr/bin/env sh
+# Husky pre-push hook
+
+echo "Running Pre-Push Checks..."
+
+# 1. Frontend: Linting
+echo "Running Angular Linting..."
+npx nx affected -t lint
+if [ $? -ne 0 ]; then
+  echo "Frontend Linting Failed. Please fix the errors before pushing."
+  exit 1
+fi
+
+# 2. Frontend: Tests
+echo "Running Angular Tests (affected only)..."
+npx nx affected -t test
+if [ $? -ne 0 ]; then
+  echo "Frontend Tests Failed. Please fix the broken tests before pushing."
+  exit 1
+fi
+
+# 3. Frontend: Build
+echo "Running Angular Build (affected only)..."
+npx nx affected -t build
+if [ $? -ne 0 ]; then
+  echo "Frontend Build Failed. Please fix the compilation errors before pushing."
+  exit 1
+fi
+
+# 3. Backend: Linting / Type Checking
+echo "Running Python Static Typing (mypy)..."
+npx nx affected -t lint-python
+if [ $? -ne 0 ]; then
+  echo "Python Static Typing Failed. Please fix the errors before pushing."
+  exit 1
+fi
+
+# 4. Backend: Tests
+echo "Running Python Tests (pytest) via Docker..."
+npx nx affected -t test-python
+if [ $? -ne 0 ]; then
+  echo "Python Tests Failed. Please fix the broken tests before pushing."
+  exit 1
+fi
+
+echo "Pre-push checks passed! Your code is ready to push."
