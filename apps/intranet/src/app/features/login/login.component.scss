@@ -1,0 +1,383 @@
+/* Login styles — ported from the .auth-* rules in the prototype's intranet.css.
+   Icon selectors target <omni-icon> (which renders a lucide <svg>). */
+
+:host {
+  display: block;
+}
+
+.auth-screen {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  background: var(--bg-app);
+  font-family: var(--font-body);
+}
+
+/* ----- Brand panel ----- */
+.auth-brand {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(155deg, var(--adept-navy-700) 0%, var(--adept-navy) 60%, #002b52 100%);
+  color: #fff;
+  padding: 48px 56px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.auth-brand::after {
+  content: '';
+  position: absolute;
+  right: -120px;
+  bottom: -120px;
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  background: radial-gradient(circle at center, rgba(216, 0, 0, 0.28), transparent 70%);
+}
+.auth-brand-top {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 1;
+}
+.auth-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.auth-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.auth-dots i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--adept-red);
+  display: inline-block;
+}
+.auth-dots i:nth-child(1) {
+  opacity: 0.55;
+}
+.auth-dots i:nth-child(2) {
+  opacity: 0.8;
+}
+.auth-wordmark {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 30px;
+  letter-spacing: -0.02em;
+}
+.auth-tech {
+  font-size: 11px;
+  letter-spacing: var(--tracking-wide);
+  color: rgba(255, 255, 255, 0.6);
+  padding-left: 2px;
+}
+.auth-brand-mid {
+  z-index: 1;
+  max-width: 420px;
+}
+.auth-brand-mid h1 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 38px;
+  line-height: 1.15;
+  color: #fff;
+  margin: 0 0 16px;
+}
+.auth-brand-mid p {
+  font-size: 16px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.82);
+  margin: 0;
+}
+.auth-feature-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  z-index: 1;
+}
+.auth-feature-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* ----- Form panel ----- */
+.auth-form-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  gap: 20px;
+}
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  padding: 36px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.auth-card-logo {
+  height: 38px;
+  width: auto;
+  object-fit: contain;
+  align-self: flex-start;
+  margin-bottom: 4px;
+}
+.auth-card-head h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 24px;
+  color: var(--fg-1);
+  margin: 0 0 6px;
+}
+.auth-card-head p {
+  font-size: 14px;
+  color: var(--fg-3);
+  margin: 0;
+}
+
+.auth-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--danger-100);
+  color: var(--adept-red-700);
+  border: 1px solid var(--adept-red-100);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.field label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg-2);
+}
+
+.auth-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.auth-input-wrap > omni-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--fg-4);
+  pointer-events: none;
+}
+.auth-input-wrap input {
+  width: 100%;
+  padding: 10px 12px 10px 38px;
+  font-family: var(--font-body);
+  font-size: var(--fs-md);
+  color: var(--fg-1);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-md);
+  outline: none;
+}
+.auth-input-wrap input:focus {
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow-focus);
+}
+.auth-pw-toggle {
+  position: absolute;
+  right: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  color: var(--fg-4);
+}
+.auth-pw-toggle:hover {
+  color: var(--fg-2);
+  background: var(--bg-hover);
+}
+
+.auth-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.auth-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--fg-2);
+  cursor: pointer;
+}
+.auth-check input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--adept-navy-700);
+}
+.auth-link {
+  font-size: 13px;
+  color: var(--adept-navy-700);
+  font-weight: 500;
+  text-decoration: none;
+}
+.auth-link:hover {
+  text-decoration: underline;
+}
+
+/* Submit button (btn primitives, since this isn't an omni-button) */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-body);
+  font-weight: var(--fw-semibold);
+  border-radius: var(--radius-lg);
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.btn-primary {
+  background: var(--adept-navy-700);
+  color: var(--fg-on-navy);
+}
+.btn-primary:hover {
+  background: var(--adept-navy-600);
+}
+.btn-lg {
+  padding: 12px 20px;
+  font-size: var(--fs-lg);
+}
+.auth-submit {
+  width: 100%;
+  justify-content: center;
+}
+.auth-submit:disabled {
+  opacity: 0.7;
+  cursor: progress;
+}
+
+.auth-demo {
+  border-top: 1px solid var(--border-1);
+  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.auth-demo-label {
+  font-size: 12px;
+  color: var(--fg-3);
+  text-align: center;
+}
+.auth-demo-label code {
+  font-family: var(--font-mono);
+  background: var(--bg-sunken);
+  padding: 1px 5px;
+  border-radius: 4px;
+  color: var(--fg-2);
+}
+.auth-demo-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+.auth-demo-chip {
+  border: 1px solid var(--border-2);
+  background: var(--bg-surface);
+  border-radius: var(--radius-pill);
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fg-2);
+  cursor: pointer;
+  font-family: var(--font-body);
+}
+.auth-demo-chip:hover {
+  border-color: var(--adept-navy-500);
+  color: var(--adept-navy-700);
+  background: var(--adept-navy-50);
+}
+
+.auth-footnote {
+  font-size: 12px;
+  color: var(--fg-4);
+  margin: 0;
+}
+
+/* ----- Extensions for Onboarding / Pending screens ----- */
+.auth-screen--centered {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  grid-template-columns: none;
+}
+
+.auth-card--narrow {
+  max-width: 400px;
+  width: 100%;
+}
+
+.auth-card--centered-text {
+  text-align: center;
+}
+
+.auth-input-simple {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  font-family: var(--font-body);
+  font-size: var(--fs-md);
+  color: var(--fg-1);
+  outline: none;
+}
+
+.auth-input-simple:focus {
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow-focus);
+}
+
+.pending-icon {
+  width: 48px;
+  height: 48px;
+  color: var(--fg-3);
+  margin-bottom: 1rem;
+}
+
+.pending-head {
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 860px) {
+  .auth-screen {
+    grid-template-columns: 1fr;
+  }
+  .auth-brand {
+    display: none;
+  }
+}

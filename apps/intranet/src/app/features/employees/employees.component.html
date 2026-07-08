@@ -1,0 +1,231 @@
+<div class="page-container">
+  <div class="page-header">
+    <div class="title-section">
+      <h1>Users & Roles</h1>
+      <p>Add, edit, and assign roles to all {{ totalUsers() }} staff members.</p>
+    </div>
+    <div class="actions">
+      <omni-button variant="ghost" class="import-csv-btn">
+        <omni-icon name="upload" [size]="16" style="margin-right: 6px;"></omni-icon> Import CSV
+      </omni-button>
+      <omni-button variant="primary" (click)="openDrawer()">
+        <omni-icon name="plus" [size]="16"></omni-icon> Add user
+      </omni-button>
+    </div>
+  </div>
+
+  <!-- Stats Grid -->
+  <div class="stats-grid">
+    <omni-stat-card label="Total users" [value]="totalUsers()"></omni-stat-card>
+    <omni-stat-card label="Active" [value]="activeUsers()"></omni-stat-card>
+    <omni-stat-card label="Pending users" infoText="New user registrations awaiting approval" [value]="pendingUsers()"></omni-stat-card>
+  </div>
+
+  <div class="table-container card">
+    <div class="card-header">
+      <div class="toggle-group">
+        <button [class.active]="selectedTab() === 'all'" (click)="selectedTab.set('all')">All users</button>
+        <button [class.active]="selectedTab() === 'pending'" (click)="selectedTab.set('pending')">
+          Pending users
+          @if (pendingUsers() > 0) {
+            <span class="badge">{{ pendingUsers() }}</span>
+          }
+        </button>
+      </div>
+      <div class="card-actions">
+        <div class="search-box">
+          <omni-icon name="search" [size]="16" class="text-muted"></omni-icon>
+          <input 
+            type="text" 
+            placeholder="Search users" 
+            [(ngModel)]="searchQuery" 
+            (ngModelChange)="onSearchChange()"
+            class="omni-input"
+          />
+        </div>
+        <div class="filter-box">
+          <select 
+            [(ngModel)]="filterDepartment" 
+            (ngModelChange)="onDepartmentFilterChange()" 
+            class="omni-input filter-select"
+          >
+            <option [ngValue]="null">All departments</option>
+            @for (dept of departments(); track dept.id) {
+              <option [value]="dept.id">{{ dept.name | formatLabel }}</option>
+            }
+          </select>
+        </div>
+      </div>
+    </div>
+
+    @if (selectedTab() === 'all') {
+      <table class="omni-table">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Department</th>
+            <th>Manager</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th style="text-align: right;"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (emp of displayedEmployees(); track emp.id) {
+            <tr>
+              <td>
+                <div class="employee-cell">
+                  <omni-avatar [initials]="getInitials(emp)" [tone]="emp.is_active ? 'success' : ''"></omni-avatar>
+                  <div class="employee-info">
+                    <span class="name">{{ emp.first_name }} {{ emp.last_name }}</span>
+                    <span class="email">{{ emp.email }}</span>
+                  </div>
+                </div>
+              </td>
+              <td>{{ emp.department_name ? (emp.department_name | formatLabel) : '—' }}</td>
+              <td>{{ emp.manager_name || '—' }}</td>
+              <td>
+                <omni-pill [tone]="getRoleTone(emp.role_name)">
+                  {{ emp.role_name ? (emp.role_name | formatLabel) : 'No Role' }}
+                </omni-pill>
+              </td>
+              <td>
+                <omni-pill [tone]="emp.is_active ? 'success' : ''">
+                  {{ emp.is_active ? 'Active' : 'Inactive' }}
+                </omni-pill>
+              </td>
+              <td style="text-align: right;">
+                <omni-button variant="ghost" (click)="openDrawer(emp)" title="Actions">
+                  <omni-icon name="ellipsis" [size]="18"></omni-icon>
+                </omni-button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="empty-state">
+                <p>No employees found matching your filters.</p>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    } @else if (selectedTab() === 'pending') {
+      <table class="omni-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Date Registered</th>
+            <th>Assignment & Approval</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (emp of displayedEmployees(); track emp.id) {
+            <tr>
+              <td class="font-medium" style="font-weight: 500;">{{ emp.first_name }} {{ emp.last_name }}</td>
+              <td class="text-muted" style="color: var(--text-muted, #64748b);">{{ emp.email }}</td>
+              <td class="text-muted" style="color: var(--text-muted, #64748b);">{{ (emp.created_at | date:'mediumDate') || '—' }}</td>
+              <td>
+                @if (selections()[emp.id]; as sel) {
+                  <div class="approval-actions" style="display: flex; gap: 1rem; align-items: flex-end;">
+                    <div class="approval-field" style="display: flex; flex-direction: column; gap: 0.25rem;">
+                      <span class="approval-label" style="font-size: 0.75rem; color: var(--text-muted, #64748b); text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em;">Role</span>
+                      <select class="approval-select omni-input" [(ngModel)]="sel.role_id" style="padding: 0.4rem 0.75rem; height: auto; min-width: 140px; border-radius: 6px; font-size: 0.875rem;">
+                        @for (role of roles(); track role.id) {
+                          <option [value]="role.id">{{ role.name | formatLabel }}</option>
+                        }
+                      </select>
+                    </div>
+                    
+                    <div class="approval-field" style="display: flex; flex-direction: column; gap: 0.25rem;">
+                      <span class="approval-label" style="font-size: 0.75rem; color: var(--text-muted, #64748b); text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em;">Department</span>
+                      <select class="approval-select omni-input" [(ngModel)]="sel.department_id" style="padding: 0.4rem 0.75rem; height: auto; min-width: 180px; border-radius: 6px; font-size: 0.875rem;">
+                        <option [ngValue]="null">No Department</option>
+                        @for (dept of departments(); track dept.id) {
+                          <option [value]="dept.id">{{ dept.name | formatLabel }}</option>
+                        }
+                      </select>
+                    </div>
+
+                    <div class="approval-field" style="display: flex; flex-direction: column; gap: 0.25rem;">
+                      <span class="approval-label" style="font-size: 0.75rem; color: var(--text-muted, #64748b); text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em;">Type</span>
+                      <select class="approval-select omni-input" [(ngModel)]="sel.is_internal" style="padding: 0.4rem 0.75rem; height: auto; min-width: 100px; border-radius: 6px; font-size: 0.875rem;">
+                        <option [ngValue]="true">Internal</option>
+                        <option [ngValue]="false">External</option>
+                      </select>
+                    </div>
+
+                    <omni-button variant="primary" style="margin-bottom: 2px;" (click)="approvePendingUser(emp.id)">
+                      Approve Access
+                    </omni-button>
+                  </div>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="4" class="empty-state">
+                <p>No pending users awaiting approval.</p>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+
+
+  <!-- Drawer for Edit / Add / Approve -->
+  @if (isDrawerOpen()) {
+    <div class="drawer-overlay" role="button" tabindex="0" (click)="closeDrawer()" (keydown.enter)="closeDrawer()" (keydown.space)="closeDrawer()"></div>
+    <div class="drawer">
+      <div class="drawer-header">
+        <h2>{{ editingEmployee() ? (editingEmployee()?.is_approved ? 'Edit User' : 'Approve User') : 'Add User' }}</h2>
+        <button class="close-btn" (click)="closeDrawer()">
+          <omni-icon name="x" [size]="20"></omni-icon>
+        </button>
+      </div>
+      <div class="drawer-body">
+        <div class="form-group">
+          <label for="emp-first-name">First Name</label>
+          <input id="emp-first-name" type="text" [(ngModel)]="formFirstName" class="omni-input" />
+        </div>
+        <div class="form-group">
+          <label for="emp-last-name">Last Name</label>
+          <input id="emp-last-name" type="text" [(ngModel)]="formLastName" class="omni-input" />
+        </div>
+        <div class="form-group">
+          <label for="emp-email">Email</label>
+          <input id="emp-email" type="email" [(ngModel)]="formEmail" class="omni-input" [disabled]="!!editingEmployee()" />
+        </div>
+        
+        <div class="form-group">
+          <label for="emp-role">Role</label>
+          <select id="emp-role" [(ngModel)]="formRoleId" class="omni-input">
+            <option [ngValue]="null">Select Role</option>
+            @for (role of roles(); track role.id) {
+              <option [ngValue]="role.id">{{ role.name | formatLabel }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="emp-dept">Department</label>
+          <select id="emp-dept" [(ngModel)]="formDepartmentId" class="omni-input">
+            <option [ngValue]="null">Select Department</option>
+            @for (dept of departments(); track dept.id) {
+              <option [ngValue]="dept.id">{{ dept.name | formatLabel }}</option>
+            }
+          </select>
+        </div>
+      </div>
+      <div class="drawer-footer">
+        <omni-button variant="ghost" (click)="closeDrawer()">Cancel</omni-button>
+        <omni-button variant="primary" (click)="saveEmployee()">
+          {{ editingEmployee() ? (editingEmployee()?.is_approved ? 'Save' : 'Approve Access') : 'Save' }}
+        </omni-button>
+      </div>
+    </div>
+  }
+
+</div>

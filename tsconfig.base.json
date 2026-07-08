@@ -1,0 +1,32 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "rootDir": ".",
+    "baseUrl": ".",
+    "sourceMap": true,
+    "declaration": false,
+    "moduleResolution": "bundler",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "ES2022",
+    "module": "ESNext",
+    "lib": ["ES2022", "dom"],
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "strict": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "paths": {
+      "@omni/auth": ["libs/auth/src/index.ts"],
+      "@omni/shell": ["libs/shell/src/index.ts"],
+      "@omni/theme": ["libs/theme/src/index.ts"],
+      "@omni/theme/*": ["libs/theme/src/*"],
+      "@omni/ui": ["libs/ui/src/index.ts"],
+      "@omni/util": ["libs/util/src/index.ts"]
+    }
+  },
+  "exclude": ["node_modules", "tmp"]
+}

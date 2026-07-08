@@ -1,0 +1,40 @@
+<div class="drawer-overlay" role="button" tabindex="0" (click)="onClose()" (keydown.enter)="onClose()" (keydown.space)="onClose()"></div>
+<div class="drawer">
+  <div class="drawer-header">
+    <h2>Add Manual Entry</h2>
+    <button class="close-btn" (click)="onClose()">
+      <omni-icon name="x" [size]="20"></omni-icon>
+    </button>
+  </div>
+  <div class="drawer-body">
+    @if (error) {
+      <div class="error-message" style="color: red; margin-bottom: 16px;">
+        {{ error }}
+      </div>
+    }
+    <div class="form-group">
+      <label for="manual-employee-id">Employee ID *</label>
+      <input id="manual-employee-id" type="text" [(ngModel)]="form.employee_id" class="omni-input" required />
+    </div>
+    <div class="form-group">
+      <label for="manual-work-date">Work Date *</label>
+      <input id="manual-work-date" type="date" [(ngModel)]="form.work_date" class="omni-input" required />
+    </div>
+    <div class="form-group">
+      <label for="manual-clock-in">Check In Time *</label>
+      <input id="manual-clock-in" type="time" [(ngModel)]="form.clock_in" class="omni-input" required />
+    </div>
+    <div class="form-group">
+      <label for="manual-clock-out">Check Out Time (Optional)</label>
+      <input id="manual-clock-out" type="time" [(ngModel)]="form.clock_out" class="omni-input" />
+    </div>
+    <div class="form-group">
+      <label for="manual-reason">Reason *</label>
+      <textarea id="manual-reason" [(ngModel)]="form.reason" class="omni-input" placeholder="e.g. Employee forgot to clock in" required></textarea>
+    </div>
+  </div>
+  <div class="drawer-footer">
+    <omni-button variant="ghost" (click)="onClose()">Cancel</omni-button>
+    <omni-button variant="primary" (click)="onSubmit()">Create Record</omni-button>
+  </div>
+</div>

@@ -1,0 +1,173 @@
+    <header class="page-head">
+      <div>
+        <h1>Team Attendance</h1>
+        <p class="eyebrow" style="text-transform: none; font-weight: normal; margin-top: 4px; color: var(--text-secondary);">Real-time view of who's checked in across all departments.</p>
+      </div>
+      <div class="actions">
+        <omni-button variant="secondary">
+          <omni-icon name="download" [size]="16" style="margin-right: 6px;"></omni-icon> Export
+        </omni-button>
+        <omni-button variant="primary">
+          <omni-icon name="calendar" [size]="16" style="margin-right: 6px;"></omni-icon> Schedule report
+        </omni-button>
+      </div>
+    </header>
+
+    <section class="stats">
+      <omni-stat-card 
+        label="Present today" 
+        infoText="Number of employees currently clocked in vs total headcount (including in-office and in-field)"
+        [value]="stats() ? (stats()!.present_today + ' / ' + stats()!.total_headcount) : '- / -'" 
+      />
+      <omni-stat-card 
+        label="Remote" 
+        [value]="stats()?.remote_today?.toString() ?? '-'" 
+      />
+      <omni-stat-card 
+        label="Late arrivals" 
+        [value]="stats()?.late_arrivals?.toString() ?? '-'" 
+      />
+      <omni-stat-card 
+        label="Pending corrections" 
+        infoText="Attendance corrections awaiting HR review"
+        [value]="stats()?.pending_corrections?.toString() ?? '-'" 
+      />
+    </section>
+
+    <div class="dashboard-layout">
+      <!-- Timeline Section -->
+      <omni-card>
+        <div class="card-header">
+          <div class="card-title-group">
+            <h3>{{ selectedTime() === 'Today' ? "Today's" : selectedTime() === 'Week' ? 'Weekly' : 'Monthly' }} timeline</h3>
+          </div>
+          <div class="card-actions">
+            <div class="toggle-group">
+              <button [class.active]="selectedTime() === 'Today'" (click)="selectedTime.set('Today')">Today</button>
+              <button [class.active]="selectedTime() === 'Week'" (click)="selectedTime.set('Week')">Week</button>
+              <button [class.active]="selectedTime() === 'Month'" (click)="selectedTime.set('Month')">Month</button>
+            </div>
+            <select class="department-select" (change)="onDepartmentChange($event)">
+              @for (dept of departments(); track dept) {
+                <option [value]="dept">{{ dept | formatLabel }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <div class="timeline-container">
+          @if (selectedTime() === 'Today') {
+            <div class="timeline-grid">
+              <!-- Time Axis Markers -->
+              <div class="time-axis">
+                <div class="axis-label" style="left: 0%;">08:00</div>
+                <div class="axis-label" style="left: 20%;">10:00</div>
+                <div class="axis-label" style="left: 40%;">12:00</div>
+                <div class="axis-label" style="left: 60%;">14:00</div>
+                <div class="axis-label" style="left: 80%;">16:00</div>
+                <div class="axis-label" style="left: 100%;">18:00</div>
+              </div>
+
+              <!-- Employee Rows -->
+              @for (emp of filteredEmployees(); track emp.employee_id) {
+                <div class="timeline-row">
+                  <div class="emp-info">
+                    <omni-avatar [initials]="emp.initials" [tone]="get_avatar_tone(emp)"></omni-avatar>
+                    <div class="emp-details">
+                      <span class="emp-name">{{ emp.first_name }} {{ emp.last_name }}</span>
+                      <span class="emp-dept">{{ emp.department | formatLabel }}</span>
+                    </div>
+                  </div>
+                  
+                  <div class="timeline-track">
+                    <!-- Axis Lines -->
+                    <div class="axis-line" style="left: 20%;"></div>
+                    <div class="axis-line" style="left: 40%;"></div>
+                    <div class="axis-line" style="left: 60%;"></div>
+                    <div class="axis-line" style="left: 80%;"></div>
+ 
+                    <div class="timeline-bg-bar"></div>
+
+                    @if (emp.records.length > 0) {
+                      @for (record of emp.records; track record.clock_in) {
+                        @if (record.clock_in) {
+                          <div class="timeline-bar" 
+                               [style.left]="calculate_left(record.clock_in)"
+                               [style.width]="calculate_width(record.clock_in, record.clock_out)"
+                               [class.active]="!record.clock_out"
+                               [class.remote]="is_remote(record)">
+                            <span class="bar-label">{{ format_time(record.clock_in) }} &rarr; {{ record.clock_out ? format_time(record.clock_out) : 'Now' }}</span>
+                          </div>
+                        }
+                      }
+                    } @else {
+                      <div class="no-record">Not checked in</div>
+                    }
+                  </div>
+                </div>
+              }
+              
+              @if (filteredEmployees().length === 0) {
+                <div class="empty-state">No attendance records found for today.</div>
+              }
+            </div>
+          } @else {
+            <div class="empty-state">
+              <lucide-icon name="calendar-days" [size]="48" style="color: var(--text-tertiary); margin-bottom: 16px;"></lucide-icon>
+              <h3>{{ selectedTime() }} view coming soon</h3>
+              <p>The timeline visualization is currently only available for Today.</p>
+            </div>
+          }
+        </div>
+      </omni-card>
+
+      <!-- Pending Corrections Section -->
+      @if ((role() === 'hr' || role() === 'manager' || role() === 'super_admin') && pending_users().length > 0) {
+        <omni-card style="margin-top: 24px;">
+          <div class="card-header">
+            <div class="card-title-group">
+              <h3>Pending correction requests</h3>
+              <p class="card-subtitle">Awaiting your approval</p>
+            </div>
+            <div class="card-actions">
+              <a href="#" class="view-all" (click)="$event.preventDefault()">View all</a>
+            </div>
+          </div>
+
+          <div style="overflow-x: auto;">
+            <table class="omni-table">
+              <thead>
+                <tr>
+                  <th>Employee</th>
+                  <th>Date</th>
+                  <th>Reason</th>
+                  <th>Requested</th>
+                  <th style="text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (user of pending_users(); track user.id) {
+                  <tr>
+                    <td>
+                      <div class="emp-info-sm">
+                        <omni-avatar [initials]="get_user_initials(user)" size="sm"></omni-avatar>
+                        <span>{{ user.first_name }} {{ user.last_name }}</span>
+                      </div>
+                    </td>
+                    <td>{{ format_date(user.created_at) }}</td>
+                    <td class="reason">New user registration</td>
+                    <td>{{ get_relative_time(user.created_at) }}</td>
+                    <td>
+                      <div class="table-actions">
+                        <omni-button variant="secondary" size="sm" (click)="rejectUser(user.id)">Reject</omni-button>
+                        <omni-button variant="primary" size="sm" (click)="approveUser(user.id)">Approve</omni-button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </omni-card>
+      }
+    </div>

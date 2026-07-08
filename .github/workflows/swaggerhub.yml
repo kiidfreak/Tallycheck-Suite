@@ -1,0 +1,23 @@
+name: Update SwaggerHub
+
+on:
+  push:
+    branches:
+      - dev
+    paths:
+      - docs/intranet/openapi.yaml
+
+jobs:
+  update-swaggerhub:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Update SwaggerHub
+        run: |
+          curl -X POST \
+            "https://api.swaggerhub.com/apis/adepttechnologies/Intranet" \
+            -H "Authorization: ${{ secrets.SWAGGERHUB_API_KEY }}" \
+            -H "Content-Type: application/yaml" \
+            --data-binary @docs/intranet/openapi.yaml

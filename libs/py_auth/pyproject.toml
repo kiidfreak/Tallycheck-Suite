@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "omni-auth"
+version = "0.0.0"
+description = "Shared Python auth helpers (Auth0 JWT verification) for Omni app backends."
+requires-python = ">=3.11"
+dependencies = [
+    "PyJWT[crypto]>=2.8",
+    "requests>=2.31",
+]
+
+[tool.setuptools]
+packages = ["py_auth"]
+
+[tool.setuptools.package-dir]
+"py_auth" = "."

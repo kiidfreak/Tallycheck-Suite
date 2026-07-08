@@ -1,0 +1,75 @@
+<div class="auth-screen auth-screen--centered">
+  <form class="auth-card auth-card--narrow" (ngSubmit)="submit()">
+    <div class="auth-card-head">
+      <h2>Complete Registration</h2>
+      <p>Almost there! Tell us about yourself.</p>
+    </div>
+
+    @if (error()) {
+      <div class="auth-error" role="alert">
+        <omni-icon name="alert-circle" /><span>{{ error() }}</span>
+      </div>
+    }
+
+    <div class="field">
+      <label for="first_name">First Name</label>
+      <div class="auth-input-wrap">
+        <input type="text" id="first_name" placeholder="John" [(ngModel)]="first_name" name="first_name" required class="auth-input-simple" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="last_name">Last Name</label>
+      <div class="auth-input-wrap">
+        <input type="text" id="last_name" placeholder="Doe" [(ngModel)]="last_name" name="last_name" required class="auth-input-simple" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="shift_type">Shift Type</label>
+      <div class="auth-input-wrap">
+        <select id="shift_type" [(ngModel)]="shift_type" (ngModelChange)="onShiftTypeChange()" name="shift_type" required class="auth-input-simple">
+          <option value="standard">Standard (5 day work week)</option>
+          <option value="extended">Extended (6 day work week)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="shift_hours">Shift Hours</label>
+      <div class="auth-input-wrap">
+        <select id="shift_hours" [(ngModel)]="shift_hours" name="shift_hours" required class="auth-input-simple">
+          @if (shift_type === 'standard') {
+            <option value="7am-5pm">Early Morning (7:00 AM - 5:00 PM)</option>
+            <option value="9am-7pm">Late Morning (9:00 AM - 7:00 PM)</option>
+            <option value="custom">Custom (10 Hours)</option>
+          } @else {
+            <option value="7am-430pm">Early Morning (7:00 AM - 4:30 PM)</option>
+            <option value="9am-630pm">Late Morning (9:00 AM - 6:30 PM)</option>
+            <option value="custom">Custom (9.5 Hours)</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    @if (shift_hours === 'custom') {
+      <div class="field">
+        <label for="custom_shift_start">Custom Start Time (24h format)</label>
+        <div class="auth-input-wrap">
+          <input type="time" id="custom_shift_start" [(ngModel)]="custom_shift_start" name="custom_shift_start" required class="auth-input-simple" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="custom_shift_end">Custom End Time (24h format)</label>
+        <div class="auth-input-wrap">
+          <input type="time" id="custom_shift_end" [(ngModel)]="custom_shift_end" name="custom_shift_end" required class="auth-input-simple" />
+        </div>
+      </div>
+    }
+
+    <button type="submit" class="btn btn-primary btn-lg auth-submit" [disabled]="busy()">
+      {{ busy() ? 'Submitting...' : 'Submit Request' }}
+    </button>
+  </form>
+</div>

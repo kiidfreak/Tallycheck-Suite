@@ -1,0 +1,26 @@
+{
+  "name": "intranet-backend",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/intranet/backend",
+  "targets": {
+    "lint-python": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker compose --env-file apps/intranet/backend/.env -f apps/intranet/docker-compose.yml run --rm omni_intranet_backend mypy --config-file=mypy.ini ."
+      }
+    },
+    "test-python": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker compose --env-file apps/intranet/backend/.env -f apps/intranet/docker-compose.yml run --rm omni_intranet_backend pytest"
+      }
+    },
+    "audit-python": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker compose --env-file apps/intranet/backend/.env -f apps/intranet/docker-compose.yml run --rm omni_intranet_backend pip-audit"
+      }
+    }
+  }
+}

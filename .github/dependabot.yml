@@ -1,0 +1,12 @@
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/apps/intranet/backend"
+    schedule:
+      interval: "weekly"
+    ignore:
+      # Internal monorepo packages — installed from local paths inside Docker.
+      # They are not PyPI packages and cannot be resolved by Dependabot.
+      - dependency-name: "omni-errors"
+      - dependency-name: "omni-config"
+      - dependency-name: "omni-success"

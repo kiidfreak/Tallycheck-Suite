@@ -1,0 +1,65 @@
+import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+
+/** Port of shared.jsx <Card>. Title/subtitle header is optional. */
+@Component({
+  selector: 'omni-card',
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div class="card">
+      @if (title || subtitle) {
+        <div class="card-header">
+          <div>
+            @if (title) {
+              <div class="card-title">{{ title }}</div>
+            }
+            @if (subtitle) {
+              <div class="card-subtitle">{{ subtitle }}</div>
+            }
+          </div>
+          <ng-content select="[card-right]"></ng-content>
+        </div>
+      }
+      <ng-content></ng-content>
+    </div>
+  `,
+  styles: [
+    `
+      :host {
+        display: block;
+        height: inherit;
+      }
+      .card {
+        height: 100%;
+        box-sizing: border-box;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-1);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        padding: var(--space-5);
+      }
+      .card-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: var(--space-3);
+        margin-bottom: var(--space-4);
+      }
+      .card-title {
+        font-family: var(--font-display);
+        font-weight: var(--fw-semibold);
+        font-size: var(--fs-lg);
+        color: var(--fg-1);
+      }
+      .card-subtitle {
+        font-size: var(--fs-sm);
+        color: var(--fg-3);
+        margin-top: 2px;
+      }
+    `,
+  ],
+})
+export class CardComponent {
+  @Input() title?: string;
+  @Input() subtitle?: string;
+}
