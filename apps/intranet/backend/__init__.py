@@ -82,6 +82,10 @@ def create_app(test_config: Optional[dict[str, Any]] = None) -> Flask:
 
     app.register_blueprint(api_v2)
 
+    # Register tenant resolution middleware
+    from utils.tenant_middleware import set_tenant_schema
+    app.before_request(set_tenant_schema)
+
     @app.cli.command("seed-db")
     def seed_db() -> None:
         """Seed roles and departments."""

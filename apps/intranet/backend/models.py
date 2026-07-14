@@ -9,6 +9,20 @@ from helpers.shift_calc_helper import *
 
 db = SQLAlchemy()
 
+class Organization(db.Model):
+    __tablename__ = 'organizations'
+    __table_args__ = {'schema': 'public'}
+
+    id: Mapped[str] = mapped_column(db.String(50), primary_key=True)  # Auth0 org_id or subdomain
+    name: Mapped[str] = mapped_column(db.String(100), nullable=False)
+    domain: Mapped[str] = mapped_column(db.String(100), unique=True, nullable=False)
+    schema_name: Mapped[str] = mapped_column(db.String(50), unique=True, nullable=False)
+    is_active: Mapped[bool] = mapped_column(db.Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    def __repr__(self) -> str:
+        return f"<Organization {self.name} ({self.id})>"
+
 # Join table for Roles and Modules
 role_modules = db.Table('role_modules',
     db.Column('role_id', db.Integer, db.ForeignKey('roles.id', ondelete='CASCADE'), primary_key=True),
