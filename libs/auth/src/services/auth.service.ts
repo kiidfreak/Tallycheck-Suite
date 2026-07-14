@@ -172,7 +172,7 @@ export class AuthService {
   }
 
   getOrganizationBySubdomain(subdomain: string) {
-    return this.http.get<{ data: { id: string; name: string; domain: string; is_active: boolean } }>(
+    return this.http.get<{ id: string; name: string; domain: string; is_active: boolean }>(
       `${this.apiUrl}/auth/organization-by-subdomain/${subdomain}`
     );
   }
@@ -184,7 +184,7 @@ export class AuthService {
           this.auth0.loginWithRedirect({
             appState: { target: '/home' },
             authorizationParams: {
-              organization: res.data.id
+              organization: res.id
             }
           });
         },

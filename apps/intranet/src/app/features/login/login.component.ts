@@ -39,7 +39,7 @@ export class LoginComponent {
     this.resolveError.set(false);
     this.auth.getOrganizationBySubdomain(sub).subscribe({
       next: (res) => {
-        this.resolvedOrgName.set(res.data.name);
+        this.resolvedOrgName.set(res.name);
         this.resolving.set(false);
       },
       error: () => {
