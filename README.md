@@ -2,7 +2,7 @@
 
 ![coverage](./badges/coverage.svg)
 
-> **TallyCheck Corporate** is an enterprise-grade, multi-tenant SaaS platform for employee workforce management, BLE beacon presence verification, and **SafeChild** daycare/Sunday school safe pickup tracking.
+> **TallyCheck** is an enterprise-grade, multi-tenant SaaS platform for employee workforce management, BLE beacon presence verification, and **SafeChild** daycare/Sunday school safe pickup tracking.
 > 
 > Built on a robust **Angular frontend** and a multi-tenant **Python Flask + PostgreSQL backend**, co-located and orchestrated locally using **Docker Compose** and **Nx**.
 
@@ -41,6 +41,59 @@ cp .env.example .env
 
 ---
 
+## 🔐 Role System & Permission Matrix
+
+TallyCheck uses a **permission matrix** for fine-grained access control across Corporate, Education, and Community (Church/Sunday School) tenants.
+
+### Roles
+
+| Role | Category | Description |
+|------|----------|-------------|
+| `staff` | Corporate | General employee / student |
+| `company_admin` | Corporate | Company-level administrator |
+| `hr_admin` | Corporate | HR / People Operations |
+| `department_manager` | Corporate | Line manager / supervisor |
+| `school_admin` | Education | University / school administrator |
+| `lecturer` | Education | University lecturer / instructor |
+| `teacher` | Community | Sunday school / daycare teacher |
+| `guardian` | Community | Parent / authorized pickup person |
+| `super_admin` | Platform | TallyCheck platform super admin |
+| `it_admin` | Platform | IT / technical administrator |
+
+### Permission Matrix (excerpt)
+
+| Permission | Staff | Company Admin | HR Admin | Dept Manager | Teacher | Guardian | Super Admin |
+|------------|:-----:|:------------:|:--------:|:------------:|:-------:|:--------:|:-----------:|
+| `view:own_attendance` | ✅ | ✅ | ✅ | ✅ | ✅ | | ✅ |
+| `clock:in_out` | ✅ | ✅ | ✅ | ✅ | ✅ | | ✅ |
+| `view:departments` | ✅ | ✅ | ✅ | ✅ | | | ✅ |
+| `edit:departments` | | ✅ | ✅ | | | | ✅ |
+| `view:employees` | | ✅ | ✅ | ✅ | | | ✅ |
+| `edit:employees` | | ✅ | ✅ | | | | ✅ |
+| `approve:employees` | | ✅ | ✅ | | | | ✅ |
+| `view:beacons` | | ✅ | ✅ | | | | ✅ |
+| `manage:beacons` | | ✅ | ✅ | | | | ✅ |
+| `view:reports` | | ✅ | ✅ | ✅ | | | ✅ |
+| `safechild:drop_off` | | | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `safechild:pickup` | | | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `manage:settings` | | ✅ | | | | | ✅ |
+| `manage:organizations` | | | | | | | ✅ |
+
+### Usage in Code
+
+```typescript
+// In Angular templates — permission-based UI gating
+@if (auth.can('manage:beacons')) {
+  <button>Manage Beacons</button>
+}
+
+// In TypeScript — direct helper
+import { hasPermission } from '@omni/auth';
+if (hasPermission(role, 'safechild:drop_off')) { ... }
+```
+
+---
+
 ## 🏛️ Architecture Details
 
 ### 1. Secure Multi-Tenant Schema Isolation
@@ -70,6 +123,9 @@ tallycheck-corporate/
 │       │   ├── login/                ← Subdomain name resolution & Auth0 redirect
 │       │   ├── beacons/              ← BLE beacon listing & department assignment view
 │       │   ├── home/                 ← Dashboard with check-in widgets & active shifts
+│       │   ├── safechild/            ← Class check-in roster, drop-off & pickup flows
+│       │   ├── employees/            ← Employee management & approval
+│       │   ├── team/                 ← Team attendance overview
 │       │   └── departments/          ← Organizational structure definition
 │       └── backend/                  ← Flask API Gateway
 │           ├── migrations/           ← Database migration versions (Alembic)
@@ -80,8 +136,13 @@ tallycheck-corporate/
 │           ├── beacon_routes.py      ← BLE beacon registry and assignment endpoints
 │           └── safechild_routes.py   ← Children list, drop-off logging, and verify APIs
 ├── libs/
-│   ├── auth/                         ← Angular Auth0 organization-aware auth library
-│   ├── shell/                        ← Navigation links and main sidebar layouts
+│   ├── auth/                         ← Auth0 org-aware auth, roles, permission matrix
+│   │   ├── roles.ts                  ← RoleKey, PERMISSION_MATRIX, hasPermission()
+│   │   ├── services/auth.service.ts  ← AuthService with can() method
+│   │   └── guards/auth.guard.ts      ← authGuard + roleGuard
+│   ├── shell/                        ← Permission-driven sidebar navigation
+│   │   ├── nav.ts                    ← navForRole() — builds nav groups from permissions
+│   │   └── sidebar.component.ts      ← Role switcher + dynamic nav rendering
 │   ├── theme/                        ← Shared SCSS tokens, fonts, and resets
 │   └── ui/                           ← Shared premium cards, pills, buttons, and icons
 ```
@@ -115,3 +176,18 @@ To test subdomain redirection and Auth0 Organizations locally:
 ```bash
 .venv\Scripts\python scratch/seed_org.py
 ```
+
+### Demo Accounts
+
+| Email | Role | Category |
+|-------|------|----------|
+| `john@acme.tallycheck.co.ke` | Staff | Corporate |
+| `david@acme.tallycheck.co.ke` | Company Admin | Corporate |
+| `mercy@acme.tallycheck.co.ke` | HR Admin | Corporate |
+| `anne@daystar.tallycheck.co.ke` | School Admin | Education |
+| `jane@daystar.tallycheck.co.ke` | Lecturer | Education |
+| `esther@daystar.tallycheck.co.ke` | Teacher | Community |
+| `grace@daystar.tallycheck.co.ke` | Guardian | Community |
+| `admin@tallycheck.co.ke` | Super Admin | Platform |
+
+Password for all demo accounts: `adept`
