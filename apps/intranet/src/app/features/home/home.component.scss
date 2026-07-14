@@ -8,7 +8,26 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-8);
+  
+  .eyebrow {
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: var(--fw-bold);
+    letter-spacing: var(--tracking-widest);
+    text-transform: uppercase;
+    color: var(--adept-navy-600);
+    margin: 0 0 6px 0;
+  }
+
+  h1 {
+    font-family: var(--font-display);
+    font-weight: var(--fw-extrabold);
+    font-size: var(--fs-3xl);
+    letter-spacing: var(--tracking-tight);
+    color: var(--fg-1);
+    margin: 0;
+  }
 }
 .who {
   display: flex;

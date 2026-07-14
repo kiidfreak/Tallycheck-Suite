@@ -44,13 +44,20 @@ import { IconComponent } from './icon.component';
         display: flex;
         flex-direction: column;
         gap: var(--space-2);
+        transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+        
+        &:hover {
+          transform: translateY(-4px);
+          box-shadow: var(--shadow-md);
+          border-color: var(--border-2);
+        }
       }
       .caption {
-        font-size: var(--fs-xs);
+        font-size: 11px;
         color: var(--fg-3);
         text-transform: uppercase;
         letter-spacing: var(--tracking-wide);
-        font-weight: var(--fw-semibold);
+        font-weight: var(--fw-bold);
       }
       .card-top {
         display: flex;
@@ -67,15 +74,16 @@ import { IconComponent } from './icon.component';
       }
       .value {
         font-family: var(--font-display);
-        font-weight: var(--fw-bold);
-        font-size: var(--fs-3xl);
+        font-weight: var(--fw-extrabold);
+        font-size: var(--fs-4xl);
         letter-spacing: var(--tracking-tight);
-        color: var(--fg-1);
+        color: var(--fg-brand);
         line-height: 1;
+        margin: var(--space-1) 0;
       }
       .delta {
-        font-size: var(--fs-sm);
-        font-weight: var(--fw-medium);
+        font-size: var(--fs-xs);
+        font-weight: var(--fw-semibold);
         color: var(--fg-3);
       }
       .delta.success {

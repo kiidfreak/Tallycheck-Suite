@@ -36,25 +36,31 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
         border: 1px solid var(--border-1);
         border-radius: var(--radius-lg);
         box-shadow: var(--shadow-sm);
-        padding: var(--space-5);
+        padding: var(--space-6);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        
+        &:hover {
+          box-shadow: var(--shadow-md);
+          border-color: var(--border-2);
+        }
       }
       .card-header {
         display: flex;
         align-items: flex-start;
         justify-content: space-between;
         gap: var(--space-3);
-        margin-bottom: var(--space-4);
+        margin-bottom: var(--space-5);
       }
       .card-title {
         font-family: var(--font-display);
-        font-weight: var(--fw-semibold);
+        font-weight: var(--fw-bold);
         font-size: var(--fs-lg);
         color: var(--fg-1);
       }
       .card-subtitle {
         font-size: var(--fs-sm);
         color: var(--fg-3);
-        margin-top: 2px;
+        margin-top: 4px;
       }
     `,
   ],
