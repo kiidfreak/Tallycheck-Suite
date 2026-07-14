@@ -80,6 +80,9 @@ def create_app(test_config: Optional[dict[str, Any]] = None) -> Flask:
     from report_routes import report_bp
     api_v2.register_blueprint(report_bp)
 
+    from beacon_routes import beacon_bp
+    api_v2.register_blueprint(beacon_bp)
+
     app.register_blueprint(api_v2)
 
     # Register tenant resolution middleware
