@@ -2,7 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { AuthService as Auth0Service } from '@auth0/auth0-angular';
-import { ROLES, RoleKey, UserProfile } from '../roles';
+import { ROLES, RoleKey, UserProfile, Permission, hasPermission } from '../roles';
 import { API_URL } from '../api-url.token';
 import { catchError, map, of, take, switchMap } from 'rxjs';
 
@@ -66,6 +66,11 @@ export class AuthService {
   readonly is_registered = this._is_registered.asReadonly();
   readonly is_approved = this._is_approved.asReadonly();
   readonly profile_loaded = this._profile_loaded.asReadonly();
+
+  /** Check if the current role has a specific permission. Use in templates: auth.can('manage:beacons') */
+  can(permission: Permission): boolean {
+    return hasPermission(this._role(), permission);
+  }
 
   fetch_db_profile() {
     this._profile_loaded.set(false);

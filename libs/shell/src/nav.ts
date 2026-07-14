@@ -1,4 +1,4 @@
-import { RoleKey } from '@omni/auth';
+import { RoleKey, hasPermission } from '@omni/auth';
 
 export interface NavItem {
   id: string; // route id, e.g. 'home', 'my-calls'
@@ -19,51 +19,69 @@ export const COMM_SUBITEMS: NavItem[] = [
   { id: 'communication/email', label: 'Email', icon: 'mail' },
 ];
 
-/** Role-aware navigation — trimmed to the TallyCheck attendance/HR surface. */
+/** Permission-aware navigation — builds sidebar groups based on role permissions. */
 export function navForRole(role: RoleKey): NavGroup[] {
+  const can = (p: Parameters<typeof hasPermission>[1]) => hasPermission(role, p);
+  const groups: NavGroup[] = [];
+
+  // ─── Workspace (everyone) ─────────────────────────────────────
   const workspace: NavItem[] = [
     { id: 'home', label: 'Home', icon: 'house' },
-    { id: 'departments', label: 'Departments', icon: 'building' },
   ];
+  if (can('view:departments')) {
+    workspace.push({ id: 'departments', label: 'Departments', icon: 'building' });
+  }
+  groups.push({ label: 'Workspace', items: workspace });
 
-  const groups: NavGroup[] = [{ label: 'Workspace', items: workspace }];
+  // ─── HR & People (corporate admins) ───────────────────────────
+  if (can('view:employees') || can('edit:attendance')) {
+    const hrItems: NavItem[] = [];
+    if (can('view:all_attendance') || can('view:team_attendance')) {
+      hrItems.push({ id: 'team', label: 'Attendance', icon: 'user-check' });
+    }
+    if (can('view:employees')) {
+      hrItems.push({ id: 'employees', label: 'Employees', icon: 'users' });
+    }
+    if (can('manage:beacons')) {
+      hrItems.push({ id: 'beacons', label: 'BLE Beacons', icon: 'bluetooth' });
+    }
+    if (can('view:reports')) {
+      hrItems.push({ id: 'reports', label: 'Reports', icon: 'bar-chart-3' });
+    }
+    if (hrItems.length > 0) {
+      groups.push({ label: 'HR & People', items: hrItems });
+    }
+  }
 
-  if (role === 'hr') {
+  // ─── SafeChild (education + community) ────────────────────────
+  if (can('safechild:view_roster')) {
     groups.push({
-      label: 'HR',
+      label: 'Sunday School',
       items: [
-        { id: 'team', label: 'Attendance', icon: 'user-check' },
-        { id: 'employees', label: 'Employees', icon: 'users' },
-        { id: 'beacons', label: 'BLE Beacons', icon: 'bluetooth' },
+        { id: 'safechild', label: 'Class Check-in', icon: 'shield-check' },
       ],
     });
   }
 
-  if (role === 'manager' || role === 'super_admin') {
-    groups.push({
-      label: 'Manager',
-      items: [
-        { id: 'team', label: 'Team Attendance', icon: 'users' },
-      ],
-    });
-  }
-
-  if (role === 'super_admin') {
-    groups.push({
-      label: 'Admin',
-      items: [
-        { id: 'employees', label: 'Users & Roles', icon: 'user-cog' },
-        { id: 'beacons', label: 'BLE Beacons', icon: 'bluetooth' },
-      ],
-    });
+  // ─── Administration (platform / IT) ───────────────────────────
+  if (can('manage:users_roles') || can('manage:settings') || can('view:audit_log')) {
+    const adminItems: NavItem[] = [];
+    if (can('manage:users_roles')) {
+      adminItems.push({ id: 'employees', label: 'Users & Roles', icon: 'user-cog' });
+    }
+    if (can('manage:settings')) {
+      adminItems.push({ id: 'settings', label: 'Settings', icon: 'settings' });
+    }
+    if (can('view:audit_log')) {
+      adminItems.push({ id: 'audit', label: 'Audit Log', icon: 'shield-alert' });
+    }
+    if (can('manage:organizations')) {
+      adminItems.push({ id: 'organizations', label: 'Organizations', icon: 'building-2' });
+    }
+    if (adminItems.length > 0) {
+      groups.push({ label: 'Administration', items: adminItems });
+    }
   }
 
   return groups;
 }
-
-export const ROLE_OPTIONS: { value: RoleKey; label: string }[] = [
-  { value: 'staff', label: 'Staff' },
-  { value: 'hr', label: 'HR' },
-  { value: 'manager', label: 'Manager' },
-  { value: 'super_admin', label: 'Super Admin' },
-];

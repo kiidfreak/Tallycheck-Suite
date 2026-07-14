@@ -1,9 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal, OnInit } from '@angular/core';
 import { RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
-import { API_URL, AuthService, RoleKey } from '@omni/auth';
+import { API_URL, AuthService, RoleKey, ROLE_OPTIONS, hasPermission } from '@omni/auth';
 import { IconComponent } from '@omni/ui';
-import { COMM_SUBITEMS, NavItem, ROLE_OPTIONS, navForRole } from './nav';
+import { COMM_SUBITEMS, NavItem, navForRole } from './nav';
 
 /** Role-aware navigation sidebar — ported from Sidebar.jsx. */
 @Component({
@@ -85,7 +85,7 @@ export class SidebarComponent implements OnInit {
     const groupsData = navForRole(role);
     const pendingCount = this.pendingUsersCount();
     
-    if (pendingCount > 0 && (role === 'hr' || role === 'super_admin')) {
+    if (pendingCount > 0 && hasPermission(role, 'approve:employees')) {
       for (const group of groupsData) {
         for (const item of group.items) {
           if (item.id === 'employees') {
@@ -102,7 +102,7 @@ export class SidebarComponent implements OnInit {
   readonly roleOptions = ROLE_OPTIONS;
 
   ngOnInit() {
-    if (this.role() === 'hr' || this.role() === 'super_admin') {
+    if (hasPermission(this.role(), 'approve:employees')) {
       this.http.get<any[]>(`${this.apiUrl}/auth/users/pending`).subscribe({
         next: (users) => {
           this.pendingUsersCount.set(users?.length || 0);
