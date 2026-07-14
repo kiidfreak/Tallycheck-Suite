@@ -26,10 +26,12 @@ export const appConfig: ApplicationConfig = {
       cacheLocation: 'localstorage',
       httpInterceptor: {
         allowedList: [
-          {
-            uri: `${environment.apiUrl}/*`,
-            allowAnonymous: true
-          }
+          `${environment.apiUrl}/beacons*`,
+          `${environment.apiUrl}/safechild*`,
+          `${environment.apiUrl}/employees*`,
+          `${environment.apiUrl}/departments*`,
+          `${environment.apiUrl}/attendance*`,
+          `${environment.apiUrl}/reports*`
         ]
       }
     }),
