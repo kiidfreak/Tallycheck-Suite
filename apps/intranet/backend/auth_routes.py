@@ -3,7 +3,7 @@ from flask import Blueprint, request, jsonify, Response
 import os
 import sys
 import requests
-from models import db, Employee, Role, Department
+from models import db, Employee, Role, Department, Organization
 from utils.shift_data import *
 from functools import wraps
 
@@ -22,6 +22,29 @@ from utils.shift_data import *
 from helpers.auth_helper import *
 
 auth_bp: Blueprint = Blueprint('auth', __name__, url_prefix='/auth')
+
+@auth_bp.route('/organization-by-subdomain/<subdomain>', methods=['GET'])
+def get_org_by_subdomain(subdomain: str) -> Tuple[Response, int]:
+    """Public endpoint to look up an organization by its subdomain."""
+    org = Organization.query.filter(
+        (Organization.domain == subdomain) | 
+        (Organization.id == subdomain) |
+        (Organization.schema_name == f"tenant_{subdomain.lower()}")
+    ).first()
+    
+    if not org:
+        raise NotFoundError(message="Organization not found")
+        
+    return SuccessResponse(
+        message="Organization resolved",
+        data={
+            "id": org.id,
+            "name": org.name,
+            "domain": org.domain,
+            "is_active": org.is_active
+        },
+        status_code=200
+    ).write_response()
 
 @auth_bp.route('/register', methods=['POST'])
 @require_auth
