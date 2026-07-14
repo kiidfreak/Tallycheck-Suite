@@ -59,7 +59,6 @@ import { COMM_SUBITEMS, NavItem, ROLE_OPTIONS, navForRole } from './nav';
         }
       }
 
-      <!--
       <div class="sidebar-footer">
         <div class="section-label" style="padding-top:0">View as</div>
         <select [value]="role()" (change)="onRoleChange($event)">
@@ -68,7 +67,6 @@ import { COMM_SUBITEMS, NavItem, ROLE_OPTIONS, navForRole } from './nav';
           }
         </select>
       </div>
-      -->
     </aside>
   `,
   styleUrl: './sidebar.component.scss',

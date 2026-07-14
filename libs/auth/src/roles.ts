@@ -47,9 +47,9 @@ export const DEMO_PASSWORD = 'adept';
 const COMM = ['communication', 'communication/chat', 'communication/email'];
 export const ROLE_ACCESS: Record<RoleKey, string[]> = {
   staff: ['home', ...COMM, 'ai', 'it', 'apps', 'departments'],
-  hr: ['home', ...COMM, 'ai', 'it', 'apps', 'team', 'planning', 'reports', 'users', 'employees', 'departments'],
-  manager: ['home', ...COMM, 'callcentre', 'ai', 'it', 'apps', 'team', 'planning', 'reports', 'departments'],
-  super_admin: ['home', ...COMM, 'callcentre', 'ai', 'it', 'apps', 'team', 'planning', 'reports', 'users', 'employees', 'settings', 'audit', 'departments'],
+  hr: ['home', ...COMM, 'ai', 'it', 'apps', 'team', 'planning', 'reports', 'users', 'employees', 'departments', 'beacons', 'safechild'],
+  manager: ['home', ...COMM, 'callcentre', 'ai', 'it', 'apps', 'team', 'planning', 'reports', 'departments', 'safechild'],
+  super_admin: ['home', ...COMM, 'callcentre', 'ai', 'it', 'apps', 'team', 'planning', 'reports', 'users', 'employees', 'settings', 'audit', 'departments', 'beacons', 'safechild'],
   call_centre_agent: ['home', 'my-calls', 'my-qa', ...COMM, 'ai', 'it', 'apps', 'departments'],
   call_centre_admin: ['home', 'callcentre', ...COMM, 'ai', 'it', 'apps', 'agent-performance', 'qa-reports', 'forecasting', 'departments'],
 };

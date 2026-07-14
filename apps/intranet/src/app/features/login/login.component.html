@@ -31,13 +31,13 @@
       </div>
 
       <div class="field">
-        <label for="subdomain">Company Subdomain</label>
+        <label for="subdomain">Work Email or Company Code</label>
         <div class="auth-input-wrap">
-          <omni-icon name="building" />
+          <omni-icon name="mail" />
           <input
             id="subdomain"
             type="text"
-            placeholder="e.g. acme"
+            placeholder="e.g. jane@daystar.ac.ke or daystar"
             (input)="onSubdomainChange($event)"
             (blur)="resolveSubdomain()"
             (keydown.enter)="resolveSubdomain()"

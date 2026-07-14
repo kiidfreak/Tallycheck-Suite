@@ -25,11 +25,25 @@ auth_bp: Blueprint = Blueprint('auth', __name__, url_prefix='/auth')
 
 @auth_bp.route('/organization-by-subdomain/<subdomain>', methods=['GET'])
 def get_org_by_subdomain(subdomain: str) -> Tuple[Response, int]:
-    """Public endpoint to look up an organization by its subdomain."""
+    """Public endpoint to look up an organization by its subdomain or email."""
+    clean_sub = subdomain.lower().strip()
+    
+    # Extract domain if full email is passed
+    if '@' in clean_sub:
+        clean_sub = clean_sub.split('@')[-1]
+        
+    # Strip common academic/corporate suffixes to isolate the key slug
+    base_slug = clean_sub
+    for suffix in ['.ac.ke', '.edu', '.com', '.co.ke', '.org', '.net']:
+        if base_slug.endswith(suffix):
+            base_slug = base_slug[:-len(suffix)]
+            break
+
     org = Organization.query.filter(
-        (Organization.domain == subdomain) | 
-        (Organization.id == subdomain) |
-        (Organization.schema_name == f"tenant_{subdomain.lower()}")
+        (Organization.domain == base_slug) | 
+        (Organization.domain == clean_sub) |
+        (Organization.domain == subdomain) |
+        (Organization.id == subdomain)
     ).first()
     
     if not org:
