@@ -171,8 +171,31 @@ export class AuthService {
     );
   }
 
-  login(): void {
-    this.auth0.loginWithRedirect({ appState: { target: '/home' } });
+  getOrganizationBySubdomain(subdomain: string) {
+    return this.http.get<{ data: { id: string; name: string; domain: string; is_active: boolean } }>(
+      `${this.apiUrl}/auth/organization-by-subdomain/${subdomain}`
+    );
+  }
+
+  login(subdomain?: string): void {
+    if (subdomain) {
+      this.getOrganizationBySubdomain(subdomain).subscribe({
+        next: (res) => {
+          this.auth0.loginWithRedirect({
+            appState: { target: '/home' },
+            authorizationParams: {
+              organization: res.data.id
+            }
+          });
+        },
+        error: (err) => {
+          console.error('[AuthService] Subdomain resolution failed:', err);
+          this.auth0.loginWithRedirect({ appState: { target: '/home' } });
+        }
+      });
+    } else {
+      this.auth0.loginWithRedirect({ appState: { target: '/home' } });
+    }
   }
 
   logout(): void {

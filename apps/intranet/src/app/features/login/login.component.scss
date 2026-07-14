@@ -381,3 +381,20 @@
     display: none;
   }
 }
+
+.resolved-info {
+  font-size: 13px;
+  font-weight: 500;
+  margin-top: -6px;
+  margin-bottom: 2px;
+  
+  &.text-success {
+    color: var(--success-700, #15803d);
+  }
+  &.text-danger {
+    color: var(--danger-700, #b91c1c);
+  }
+  &.text-muted {
+    color: var(--fg-4);
+  }
+}
