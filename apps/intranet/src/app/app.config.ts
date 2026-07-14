@@ -26,7 +26,10 @@ export const appConfig: ApplicationConfig = {
       cacheLocation: 'localstorage',
       httpInterceptor: {
         allowedList: [
-          `${environment.apiUrl}/*`
+          {
+            uri: `${environment.apiUrl}/*`,
+            allowAnonymous: true
+          }
         ]
       }
     }),
