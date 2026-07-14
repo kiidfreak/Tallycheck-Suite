@@ -21,7 +21,7 @@ export const appConfig: ApplicationConfig = {
       clientId: '438nQYs59MzRznaEU0lew3Um4RTSYTKl',
       authorizationParams: {
         redirect_uri: window.location.origin,
-        audience: 'https://intranet/api',
+        audience: 'https://tallycheck/api',
       },
       cacheLocation: 'localstorage',
       httpInterceptor: {
