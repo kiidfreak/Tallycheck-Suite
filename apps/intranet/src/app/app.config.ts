@@ -31,7 +31,10 @@ export const appConfig: ApplicationConfig = {
           `${environment.apiUrl}/employees*`,
           `${environment.apiUrl}/departments*`,
           `${environment.apiUrl}/attendance*`,
-          `${environment.apiUrl}/reports*`
+          `${environment.apiUrl}/reports*`,
+          `${environment.apiUrl}/auth/register*`,
+          `${environment.apiUrl}/auth/profile*`,
+          `${environment.apiUrl}/auth/users*`
         ]
       }
     }),
