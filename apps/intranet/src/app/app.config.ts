@@ -17,8 +17,8 @@ export const appConfig: ApplicationConfig = {
     ])),
     { provide: API_URL, useValue: environment.apiUrl },
     provideAuth0({
-      domain: 'dev-2685h5q7efjt6peh.us.auth0.com',
-      clientId: 'GjkjPfZrtR4XAv820vmde7SDlGeUnkwJ',
+      domain: 'dev-x506paw8afbw6jgu.us.auth0.com',
+      clientId: '438nQYs59MzRznaEU0lew3Um4RTSYTKl',
       authorizationParams: {
         redirect_uri: window.location.origin,
         audience: 'https://intranet/api',
