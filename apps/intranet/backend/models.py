@@ -206,3 +206,73 @@ class BeaconAssignment(db.Model):
     def __repr__(self) -> str:
         return f"<BeaconAssignment {self.beacon_id} to dept {self.department_id}>"
 
+
+class Child(db.Model):
+    __tablename__ = 'children'
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(db.String(255), nullable=False)
+    group_name: Mapped[str] = mapped_column(db.String(100), nullable=False)
+    photo_url: Mapped[Optional[str]] = mapped_column(db.String(512), nullable=True)
+    is_active: Mapped[bool] = mapped_column(db.Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    def __repr__(self) -> str:
+        return f"<Child {self.name}>"
+
+
+class Guardian(db.Model):
+    __tablename__ = 'guardians'
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(db.String(255), nullable=False)
+    phone: Mapped[str] = mapped_column(db.String(20), nullable=False)
+    relation: Mapped[str] = mapped_column(db.String(50), nullable=False)
+    photo_url: Mapped[Optional[str]] = mapped_column(db.String(512), nullable=True)
+    is_active: Mapped[bool] = mapped_column(db.Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    def __repr__(self) -> str:
+        return f"<Guardian {self.name}>"
+
+
+class ChildGuardian(db.Model):
+    __tablename__ = 'child_guardians'
+
+    child_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), db.ForeignKey('children.id', ondelete='CASCADE'), primary_key=True)
+    guardian_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), db.ForeignKey('guardians.id', ondelete='CASCADE'), primary_key=True)
+    is_primary: Mapped[bool] = mapped_column(db.Boolean, default=False, nullable=False)
+    authorization_status: Mapped[str] = mapped_column(db.String(50), default='approved', nullable=False)
+
+    child: Mapped["Child"] = relationship('Child', backref=db.backref('guardian_links', lazy=True, cascade="all, delete-orphan"))
+    guardian: Mapped["Guardian"] = relationship('Guardian', backref=db.backref('child_links', lazy=True, cascade="all, delete-orphan"))
+
+    def __repr__(self) -> str:
+        return f"<ChildGuardian {self.child_id} - {self.guardian_id}>"
+
+
+class PickupToken(db.Model):
+    __tablename__ = 'pickup_tokens'
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    child_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), db.ForeignKey('children.id', ondelete='CASCADE'), nullable=False)
+    guardian_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), db.ForeignKey('guardians.id', ondelete='SET NULL'), nullable=True)
+    token_type: Mapped[str] = mapped_column(db.String(10), nullable=False)  # 'QR' or 'PIN'
+    qr_payload: Mapped[str] = mapped_column(db.String(255), unique=True, nullable=False)
+    pin: Mapped[str] = mapped_column(db.String(4), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(db.DateTime, nullable=False)
+    status: Mapped[str] = mapped_column(db.String(20), default='pending', nullable=False)  # 'pending', 'verified', 'expired'
+    created_by: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), db.ForeignKey('employees.id'), nullable=True)
+    verified_by: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), db.ForeignKey('employees.id'), nullable=True)
+    verified_at: Mapped[Optional[datetime]] = mapped_column(db.DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    child: Mapped["Child"] = relationship('Child')
+    guardian: Mapped[Optional["Guardian"]] = relationship('Guardian')
+    creator: Mapped[Optional["Employee"]] = relationship('Employee', foreign_keys=[created_by])
+    verifier: Mapped[Optional["Employee"]] = relationship('Employee', foreign_keys=[verified_by])
+
+    def __repr__(self) -> str:
+        return f"<PickupToken {self.id} for {self.child_id}>"
+
+
