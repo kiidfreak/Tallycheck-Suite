@@ -167,3 +167,42 @@ class AuditLog(db.Model):
 
     employee: Mapped["Employee"] = relationship('Employee', backref='audit_logs')
     attendance_record: Mapped["AttendanceRecord"] = relationship('AttendanceRecord', backref='audit_logs')
+
+
+class BleBeacon(db.Model):
+    __tablename__ = 'ble_beacons'
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name: Mapped[Optional[str]] = mapped_column(db.String(100), nullable=True)
+    mac_address: Mapped[str] = mapped_column(db.String(50), unique=True, nullable=False)
+    uuid: Mapped[Optional[str]] = mapped_column(db.String(255), nullable=True)
+    major: Mapped[int] = mapped_column(db.Integer, default=1, nullable=False)
+    minor: Mapped[int] = mapped_column(db.Integer, default=1, nullable=False)
+    location: Mapped[Optional[str]] = mapped_column(db.String(255), nullable=True)
+    description: Mapped[Optional[str]] = mapped_column(db.Text, nullable=True)
+    is_active: Mapped[bool] = mapped_column(db.Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+
+    def __repr__(self) -> str:
+        return f"<BleBeacon {self.name or self.mac_address}>"
+
+
+class BeaconAssignment(db.Model):
+    __tablename__ = 'beacon_assignments'
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    beacon_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), db.ForeignKey('ble_beacons.id', ondelete='CASCADE'), nullable=False)
+    department_id: Mapped[Optional[int]] = mapped_column(db.Integer, db.ForeignKey('departments.id', ondelete='CASCADE'), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    beacon: Mapped["BleBeacon"] = relationship('BleBeacon', backref=db.backref('assignments', lazy=True, cascade="all, delete-orphan"))
+    department: Mapped[Optional["Department"]] = relationship('Department', backref='beacon_assignments')
+
+    __table_args__ = (
+        db.UniqueConstraint('beacon_id', 'department_id', name='uq_beacon_dept'),
+    )
+
+    def __repr__(self) -> str:
+        return f"<BeaconAssignment {self.beacon_id} to dept {self.department_id}>"
+
