@@ -66,6 +66,12 @@ export const appRoutes: Route[] = [
         canActivate: [roleGuard],
         data: { id: 'departments', title: 'Departments', icon: 'building' },
       },
+      {
+        path: 'beacons',
+        loadComponent: () => import('./features/beacons/beacons.component').then((m) => m.BeaconsComponent),
+        canActivate: [roleGuard],
+        data: { id: 'beacons', title: 'BLE Beacons', icon: 'bluetooth' },
+      },
       placeholder('reports', 'reports', 'Reports', 'chart-column'),
       placeholder('settings', 'settings', 'Settings', 'settings'),
       placeholder('audit', 'audit', 'Audit Log', 'shield'),

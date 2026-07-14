@@ -34,6 +34,7 @@ export function navForRole(role: RoleKey): NavGroup[] {
       items: [
         { id: 'team', label: 'Attendance', icon: 'user-check' },
         { id: 'employees', label: 'Employees', icon: 'users' },
+        { id: 'beacons', label: 'BLE Beacons', icon: 'bluetooth' },
       ],
     });
   }
@@ -52,6 +53,7 @@ export function navForRole(role: RoleKey): NavGroup[] {
       label: 'Admin',
       items: [
         { id: 'employees', label: 'Users & Roles', icon: 'user-cog' },
+        { id: 'beacons', label: 'BLE Beacons', icon: 'bluetooth' },
       ],
     });
   }
