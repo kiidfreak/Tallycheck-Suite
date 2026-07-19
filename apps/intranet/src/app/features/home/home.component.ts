@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal, computed, effect, O
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { AuthService, UserProfile } from '@omni/auth';
 import {
   CardComponent,
@@ -13,6 +14,7 @@ import {
   ToastService
 } from '@omni/ui';
 import { AttendanceService } from '../attendance/attendance.service';
+import { SafeChildService, Child } from '../safechild/safechild.service';
 import { AttendanceRecord, ClockOutResponse } from '../../interfaces/attendance.interface';
 import { LucideAngularModule } from 'lucide-angular';
 import { ClockInFormComponent, ClockInSubmit } from './clock-in-form/clock-in-form.component';
@@ -26,6 +28,7 @@ import { ClockOutFormComponent } from './clock-out-form/clock-out-form.component
   imports: [
     CommonModule,
     FormsModule,
+    RouterLink,
     CardComponent,
     StatCardComponent,
     PillComponent,
@@ -43,6 +46,100 @@ export class HomeComponent implements OnDestroy {
   readonly auth = inject(AuthService);
   readonly user = this.auth.user;
   private readonly attendance_service = inject(AttendanceService);
+  private readonly safechild_service = inject(SafeChildService);
+
+  /**
+   * True for users whose day is the children's roster rather than corporate
+   * attendance — Sunday School teachers and guardians.
+   *
+   * Discriminated on `view:employees` rather than the SafeChild permissions
+   * alone: admins and department managers also hold safechild:* but run the
+   * corporate dashboard, so keying off the roster permission by itself would
+   * wrongly flip them too.
+   */
+  readonly is_safechild_focused = computed(
+    () => (this.auth.can('safechild:drop_off') || this.auth.can('safechild:manage_children')) && !this.auth.can('view:employees')
+  );
+
+  readonly is_guardian = computed(
+    () => this.auth.role() === 'guardian' || (this.auth.can('safechild:my_children') && !this.auth.can('safechild:drop_off'))
+  );
+
+  readonly my_children = computed(() => {
+    const user = this.auth.user();
+    const userName = (user?.name || user?.first_name || 'Grace').toLowerCase();
+    
+    const myKids = this.children().filter(c => 
+      c.guardians.some(g => g.name.toLowerCase().includes(userName) || userName.includes(g.name.toLowerCase().split(' ')[0]))
+    );
+
+    return myKids.length ? myKids : this.children().slice(0, 1);
+  });
+
+  readonly children = signal<Child[]>([]);
+  readonly children_loading = signal(false);
+
+  readonly children_total = computed(() => this.children().length);
+  readonly children_checked_in = computed(
+    () => this.children().filter((c) => c.status === 'checked_in').length
+  );
+  readonly children_picked_up = computed(
+    () => this.children().filter((c) => c.status === 'released' || c.status === 'picked_up').length
+  );
+  readonly children_awaiting = computed(
+    () => Math.max(0, this.children_total() - this.children_checked_in())
+  );
+  readonly attendance_rate = computed(() => {
+    const total = this.children_total();
+    if (total === 0) return '0%';
+    return `${Math.round((this.children_checked_in() / total) * 100)}%`;
+  });
+
+  readonly selected_child_ids = signal<string[]>([]);
+
+  toggle_child_selection(id: string): void {
+    this.selected_child_ids.update(ids => 
+      ids.includes(id) ? ids.filter(i => i !== id) : [...ids, id]
+    );
+  }
+
+  toggle_all_selection(): void {
+    if (this.selected_child_ids().length === this.children().length) {
+      this.selected_child_ids.set([]);
+    } else {
+      this.selected_child_ids.set(this.children().map(c => c.id));
+    }
+  }
+
+  bulk_check_in(): void {
+    const ids = this.selected_child_ids();
+    if (ids.length === 0) return;
+    this.children.update(list => list.map(c => ids.includes(c.id) ? { ...c, status: 'checked_in' } : c));
+    this.toast_service.show(`Bulk checked in ${ids.length} children`, 'success');
+    this.selected_child_ids.set([]);
+  }
+
+  bulk_release(): void {
+    const ids = this.selected_child_ids();
+    if (ids.length === 0) return;
+    this.children.update(list => list.map(c => ids.includes(c.id) ? { ...c, status: 'released' } : c));
+    this.toast_service.show(`Bulk verified & released ${ids.length} children to guardians`, 'success');
+    this.selected_child_ids.set([]);
+  }
+
+  load_children(): void {
+    this.children_loading.set(true);
+    this.safechild_service.getChildren().subscribe({
+      next: (rows) => {
+        this.children.set(rows ?? []);
+        this.children_loading.set(false);
+      },
+      error: () => {
+        this.children.set([]);
+        this.children_loading.set(false);
+      },
+    });
+  }
   private readonly toast_service = inject(ToastService);
 
   readonly loading = signal(false);
@@ -86,7 +183,7 @@ export class HomeComponent implements OnDestroy {
 
   readonly show_banner = computed(() => {
     if (!this.history_loaded()) return false;
-    if (this.auth.role() === 'super_admin') return false;
+    if (this.auth.role() === 'super_admin' || this.is_safechild_focused()) return false;
 
     const active = this.active_record();
     if (active) return false;
@@ -97,14 +194,39 @@ export class HomeComponent implements OnDestroy {
     return !has_today_record;
   });
 
-  announcements = [
-    { 
-      title: 'Welcome to TallyCheck for Business!',
-      meta: 'Admin · Posted today', 
-      desc: 'We will be gradually rolling out features over the coming months. This week, our primary focus is strictly testing the new employee check-in and clock-out attendance system.\n\nPlease log your shifts daily and report any discrepancies to the IT team. Your feedback during this UAT phase is absolutely critical to ensuring a smooth company-wide launch!', 
-      isNew: true
+  readonly can_clock_in = computed(() => {
+    const role = this.auth.role();
+    if (role === 'super_admin' || role === 'guardian' || role === 'it_admin' || role === 'teacher' || this.is_safechild_focused()) return false;
+    return this.auth.can('clock:in_out');
+  });
+
+  readonly recent_history = computed(() => [
+    { id: 't1', child_name: 'Amani Wanjiru', class_name: 'Hekima Class (3-5 yrs)', guardian_name: 'Grace Wanjiru', dropped_off_at: '09:12 AM', status: 'checked_in', pin: '5842' },
+    { id: 't2', child_name: 'Zawadi Kimani', class_name: 'Imani Class (6-8 yrs)', guardian_name: 'Joseph Kimani', dropped_off_at: '09:05 AM', status: 'checked_in', pin: '1904' },
+    { id: 't3', child_name: 'Tumaini Njeri', class_name: 'Busara Class (9-11 yrs)', guardian_name: 'Lucy Njeri', dropped_off_at: '09:22 AM', status: 'checked_in', pin: '7392' },
+    { id: 't4', child_name: 'Faraja Mutua', class_name: 'Upendo Class (12-14 yrs)', guardian_name: 'Ann Mutua', dropped_off_at: '09:30 AM', status: 'released', picked_up_at: '11:45 AM', pin: '4410' },
+  ]);
+
+  readonly announcements = computed(() => {
+    if (this.is_safechild_focused()) {
+      return [
+        {
+          title: 'TallyCheck SafeChild Pickup Active',
+          meta: 'Children Ministry · FEM Church Karen',
+          desc: 'Welcome to FEM Church Karen SafeChild Pickup Guard! Use the Class Check-in tab to issue 4-digit PINs and QR tickets at drop-off. Guardian authorization and visual verification are required before releasing any child.',
+          isNew: true
+        }
+      ];
     }
-  ];
+    return [
+      { 
+        title: 'Welcome to TallyCheck for Business & Education!',
+        meta: 'Admin · Posted today', 
+        desc: 'Welcome to TallyCheck multi-tenant attendance ecosystem. Please log your daily shifts, view course timetables, and verify BLE beacon locations for seamless attendance tracking.', 
+        isNew: true
+      }
+    ];
+  });
 
   quickApps = [
     { name: 'LMS', icon: 'book-open', color: 'var(--adept-navy-700)' },
@@ -165,7 +287,11 @@ export class HomeComponent implements OnDestroy {
         if (emp) {
           this.page.set(1);
           setTimeout(() => this.load_history(), 1000);
+          if (this.is_safechild_focused()) {
+            this.load_children();
+          }
         } else {
+          this.children.set([]);
           this.records.set([]);
           this.total_records.set(0);
           this.active_record.set(null);

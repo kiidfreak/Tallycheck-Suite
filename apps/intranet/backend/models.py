@@ -131,6 +131,12 @@ class Employee(db.Model):
     # Legacy column — superseded by shift_type/shift_hours; kept for backward compat, remove in a future migration.
     standard_shift: Mapped[str] = mapped_column(db.String, default='morning', server_default='morning', nullable=False)
 
+    # Manager-set clock-in cutoff for this employee, as an hour (0-23).
+    # NULL means "use the tenant default" (OrgSettings.checkin_cutoff_hours_after_start
+    # applied to this employee's shift start). Only managers/admins may set it —
+    # employees cannot extend their own cutoff.
+    checkin_cutoff_hour: Mapped[Optional[int]] = mapped_column(db.Integer, nullable=True)
+
     avatar: Mapped[Optional[str]] = mapped_column(db.String, nullable=True)
     is_approved: Mapped[bool] = mapped_column(db.Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
@@ -212,10 +218,25 @@ class Child(db.Model):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(db.String(255), nullable=False)
+
+    # Free-text label kept as the display name and as the backfill source for
+    # class_id. Superseded by the class relationship -- read class_id when
+    # scoping, group_name only for display.
     group_name: Mapped[str] = mapped_column(db.String(100), nullable=False)
+
+    # Nullable so children imported before classes existed still load; those
+    # rows are simply invisible to teacher-scoped roster queries until assigned.
+    class_id: Mapped[Optional[int]] = mapped_column(
+        db.Integer, db.ForeignKey('sunday_school_classes.id', ondelete='SET NULL'), nullable=True
+    )
+
     photo_url: Mapped[Optional[str]] = mapped_column(db.String(512), nullable=True)
     is_active: Mapped[bool] = mapped_column(db.Boolean, default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    sunday_class: Mapped[Optional["SundaySchoolClass"]] = relationship(
+        'SundaySchoolClass', backref=db.backref('children', lazy=True)
+    )
 
     def __repr__(self) -> str:
         return f"<Child {self.name}>"
@@ -276,3 +297,111 @@ class PickupToken(db.Model):
         return f"<PickupToken {self.id} for {self.child_id}>"
 
 
+
+
+class OrgSettings(db.Model):
+    """Tenant-wide attendance defaults.
+
+    Exactly one row per tenant schema (id == 1) — use OrgSettings.get() rather
+    than querying directly, so a tenant that predates this table still resolves
+    to sane defaults instead of None.
+
+    These are DEFAULTS. Where an employee carries a manager-set override the
+    override wins; see helpers/shift_calc_helper.py for the resolution order.
+    """
+    __tablename__ = 'org_settings'
+
+    id: Mapped[int] = mapped_column(db.Integer, primary_key=True, default=1)
+
+    # --- Check-in window ---
+    # Hours after shift start when clock-in closes. Applies to any employee
+    # without a manager-set checkin_cutoff_hour override.
+    checkin_cutoff_hours_after_start: Mapped[int] = mapped_column(
+        db.Integer, default=5, server_default='5', nullable=False
+    )
+
+    # --- Reminders ---
+    # Delivered by the reminder job runner (jobs/reminder_job.py), which is a
+    # separate process — nothing here fires on its own.
+    reminder_enabled: Mapped[bool] = mapped_column(
+        db.Boolean, default=False, server_default='false', nullable=False
+    )
+    # How long before an employee's cutoff to nudge them to clock in.
+    reminder_minutes_before_cutoff: Mapped[int] = mapped_column(
+        db.Integer, default=30, server_default='30', nullable=False
+    )
+
+    updated_at: Mapped[datetime] = mapped_column(
+        db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+    updated_by: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True), db.ForeignKey('employees.id', ondelete='SET NULL'), nullable=True
+    )
+
+    editor: Mapped[Optional["Employee"]] = relationship('Employee', foreign_keys=[updated_by])
+
+    # Fallback used when the table has no row yet, so cutoff resolution never
+    # depends on the row having been created first.
+    DEFAULT_CUTOFF_HOURS_AFTER_START = 5
+
+    @classmethod
+    def get(cls) -> "OrgSettings":
+        """Return this tenant's settings row, creating it on first access."""
+        settings = cls.query.get(1)
+        if settings is None:
+            settings = cls(id=1)
+            db.session.add(settings)
+            db.session.commit()
+        return settings
+
+    def __repr__(self) -> str:
+        return f"<OrgSettings cutoff=+{self.checkin_cutoff_hours_after_start}h reminders={self.reminder_enabled}>"
+
+
+class SundaySchoolClass(db.Model):
+    """A Sunday School class (age group). Children belong to one; teachers are
+    assigned to one or more via ClassTeacher."""
+    __tablename__ = 'sunday_school_classes'
+
+    id: Mapped[int] = mapped_column(db.Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(db.String(100), unique=True, nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(db.String(255), nullable=True)
+    is_active: Mapped[bool] = mapped_column(db.Boolean, default=True, server_default='true', nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+    def __repr__(self) -> str:
+        return f"<SundaySchoolClass {self.name}>"
+
+
+class ClassTeacher(db.Model):
+    """Assigns a teacher (Employee) to a Sunday School class.
+
+    Many-to-many on purpose: a class can be co-taught, and a teacher can cover
+    more than one class. Scoping the roster to a teacher means going through
+    this table -- a teacher sees only the children in classes they are assigned
+    to, never the whole church roster.
+    """
+    __tablename__ = 'class_teachers'
+
+    class_id: Mapped[int] = mapped_column(
+        db.Integer, db.ForeignKey('sunday_school_classes.id', ondelete='CASCADE'), primary_key=True
+    )
+    teacher_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), db.ForeignKey('employees.id', ondelete='CASCADE'), primary_key=True
+    )
+    is_lead: Mapped[bool] = mapped_column(db.Boolean, default=False, server_default='false', nullable=False)
+    assigned_at: Mapped[datetime] = mapped_column(
+        db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+    sunday_class: Mapped["SundaySchoolClass"] = relationship(
+        'SundaySchoolClass', backref=db.backref('teacher_links', lazy=True, cascade="all, delete-orphan")
+    )
+    teacher: Mapped["Employee"] = relationship(
+        'Employee', backref=db.backref('class_links', lazy=True, cascade="all, delete-orphan")
+    )
+
+    def __repr__(self) -> str:
+        return f"<ClassTeacher class={self.class_id} teacher={self.teacher_id}>"

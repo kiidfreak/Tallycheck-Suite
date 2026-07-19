@@ -27,49 +27,315 @@
   </div>
 </header>
 
-<section class="stats">
-  <omni-stat-card label="Your hours this week" [value]="hours_this_week() + 'h'" [delta]="get_hours_delta()" />
-  <omni-stat-card label="Attendance streak" [value]="streak() + 'd'" delta="active days" deltaTone="success" />
-  <omni-stat-card label="Team present" infoText="Colleagues in your department currently checked in" [value]="team_present() + '/' + team_total()" delta="In your department" />
-</section>
+@if (is_guardian()) {
+  <!-- Parent Guardian Home View -->
+  <div style="display: flex; flex-direction: column; gap: 20px; width: 100%;">
+    <omni-card title="My Registered Children &amp; Live Passes" subtitle="FEM Church Karen — SafeChild Sunday School">
+      <div style="display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px;">
+        @for (child of my_children(); track child.id) {
+          <div class="card" style="padding: 16px; flex: 1; min-width: 300px; border: 1px solid #cbd5e1; background: #faf5ff;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <strong style="font-size: 16px; color: #0f172a; display: block;">{{ child.name }}</strong>
+                <span style="font-size: 12px; color: #64748b;">{{ child.group_name }} · Ezra Building</span>
+              </div>
+              <span style="background: #dcfce7; color: #15803d; padding: 4px 10px; border-radius: 999px; font-weight: 600; font-size: 12px;">
+                🟢 Present in Room
+              </span>
+            </div>
 
-<div class="dashboard-layout">
-  <div class="check-in-col">
-    @if (active_record(); as record) {
-      <omni-card title="Your active shift" [subtitle]="'Started at ' + format_time(record.clock_in)">
+            <div style="margin-top: 16px; padding: 12px; background: #ffffff; border: 1px solid #e0e7ff; border-radius: 8px;">
+              <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #4338ca; font-weight: 700;">
+                🔐 Active Pickup PIN
+              </div>
+              <div style="font-size: 24px; font-weight: 800; color: #1e1b4b; letter-spacing: 4px; margin-top: 4px;">
+                5842
+              </div>
+              <span style="font-size: 11px; color: #64748b; margin-top: 4px; display: block;">
+                Show this PIN or QR pass to gate security at checkout.
+              </span>
+            </div>
+          </div>
+        }
+      </div>
+    </omni-card>
+
+    <omni-card title="Announcements &amp; Updates" class="announcements-card">
+      <div class="announcement-list">
+        @for (ann of announcements(); track ann.title) {
+          <div class="announcement-item">
+            <div class="ann-header">
+              <h4>{{ ann.title }}</h4>
+              @if (ann.isNew) {
+                <span class="new-badge">● New</span>
+              }
+            </div>
+            <span class="ann-meta">{{ ann.meta }}</span>
+            <p class="ann-desc">{{ ann.desc }}</p>
+          </div>
+        }
+      </div>
+    </omni-card>
+  </div>
+} @else if (is_safechild_focused()) {
+  <!-- Sunday School / guardian view: stats top, side-by-side 1/4 verification card + 3/4 high-capacity roster bar -->
+  <section class="stats">
+    <omni-stat-card label="Children in your class" [value]="children_total() + ''" delta="on class roster" />
+    <omni-stat-card label="Checked in today" [value]="children_checked_in() + ''" delta="dropped off at class" deltaTone="success" />
+    <omni-stat-card label="Picked up / Released" [value]="children_picked_up() + ''" delta="verified by PIN/QR" deltaTone="success" />
+  </section>
+
+  <!-- Announcements & Updates Banner -->
+  <section class="announcements-section" style="margin-top: 16px;">
+    <omni-card title="Announcements &amp; Updates" class="announcements-card">
+      <div class="announcement-list">
+        @for (ann of announcements(); track ann.title) {
+          <div class="announcement-item">
+            <div class="ann-header">
+              <h4>{{ ann.title }}</h4>
+              @if (ann.isNew) {
+                <span class="new-badge">● New</span>
+              }
+            </div>
+            <span class="ann-meta">{{ ann.meta }}</span>
+            <p class="ann-desc">{{ ann.desc }}</p>
+          </div>
+        }
+      </div>
+    </omni-card>
+  </section>
+
+
+
+  <!-- Side-by-side 1/4 + 3/4 Row -->
+  <div style="display: flex; gap: 16px; width: 100%; margin-top: 16px; align-items: flex-start; flex-wrap: wrap;">
+    
+    <!-- 1/4 (28%) Quick Pickup Verification Card -->
+    <div style="flex: 1; min-width: 280px; max-width: 320px;">
+      <omni-card title="Quick Verification" subtitle="Verify 4-digit PIN or QR Ticket">
         <div card-right>
+          <omni-pill tone="success">Gate Guard</omni-pill>
         </div>
-        
-        <div class="check-in-form">
-          <app-clock-out-form
-            [loading]="loading()"
-            [startTime]="record.clock_in"
-            (clock_out)="clock_out($event)"
-          />
+        <div style="padding: 8px 0; display: flex; flex-direction: column; gap: 12px;">
+          <p style="margin: 0; color: var(--text-secondary); font-size: 13px; line-height: 1.4;">
+            Validate guardian authorization before releasing child checkout:
+          </p>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <omni-button variant="primary" size="sm" routerLink="/safechild">
+              <omni-icon name="shield-check" [size]="16"></omni-icon>
+              Verify Guardian Pickup &amp; PIN
+            </omni-button>
+            <omni-button variant="secondary" size="sm" routerLink="/safechild">
+              <omni-icon name="qr-code" [size]="16"></omni-icon>
+              Scan Guardian QR Ticket
+            </omni-button>
+          </div>
 
-          <div class="text-center">
-            <a href="javascript:void(0)" class="view-all-link" (click)="toggle_timesheet()">
-              {{ show_timesheet() ? 'Hide attendance history' : 'View attendance history' }} &rarr;
-            </a>
+          <div style="margin-top: 8px; border-top: 1px solid var(--border-color, #e2e8f0); padding-top: 10px;">
+            <h4 style="margin: 0 0 8px 0; font-size: 12px; color: var(--fg-1); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Recent Approvals</h4>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              @for (rec of recent_history().slice(0, 3); track rec.id) {
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: #f8fafc; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 11px;">
+                  <div>
+                    <strong style="color: #0f172a; display: block;">{{ rec.child_name }}</strong>
+                    <span style="color: #64748b; font-size: 10px;">PIN: {{ rec.pin }}</span>
+                  </div>
+                  <div style="text-align: right;">
+                    @if (rec.status === 'released') {
+                      <span style="background: #dcfce7; color: #15803d; padding: 2px 4px; border-radius: 4px; font-weight: 600; font-size: 9px;">RELEASED</span>
+                    } @else {
+                      <span style="background: #e0e7ff; color: #3730a3; padding: 2px 4px; border-radius: 4px; font-weight: 600; font-size: 9px;">IN CLASS</span>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
           </div>
         </div>
       </omni-card>
-    } @else {
-      <omni-card title="Check in for today" [subtitle]="current_date_str()">
-        <div card-right>
-          <omni-pill tone="warning">Not checked in</omni-pill>
-        </div>
-        
-        <div class="check-in-form">
-          <app-clock-in-form
-            [loading]="loading()"
-            (clock_in)="clock_in($event)"
-          />
+    </div>
 
-          <div class="text-center">
-            <a href="javascript:void(0)" class="view-all-link" (click)="toggle_timesheet()">
-              {{ show_timesheet() ? 'Hide attendance history' : 'View attendance history' }} &rarr;
-            </a>
+    <!-- 3/4 High-Capacity Class Roster Bar -->
+    <div style="flex: 3; min-width: 0;">
+      <omni-card title="Sunday School Class Roster" subtitle="High-capacity attendance management &amp; bulk operations">
+        <div card-right style="display: flex; align-items: center; gap: 8px;">
+          @if (selected_child_ids().length > 0) {
+            <span style="font-size: 12px; font-weight: 600; color: #4338ca; background: #e0e7ff; padding: 4px 8px; border-radius: 6px;">
+              {{ selected_child_ids().length }} selected
+            </span>
+            <omni-button variant="primary" size="sm" (click)="bulk_check_in()">
+              Bulk Check-in
+            </omni-button>
+            <omni-button variant="secondary" size="sm" (click)="bulk_release()">
+              Bulk Release
+            </omni-button>
+          }
+          <omni-button variant="ghost" size="sm" (click)="load_children()">
+            <omni-icon name="refresh-cw" [size]="14"></omni-icon>
+            Reload
+          </omni-button>
+          <omni-button variant="ghost" size="sm" routerLink="/safechild">
+            Full Page &rarr;
+          </omni-button>
+        </div>
+
+        @if (children_loading()) {
+          <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 8px;">
+            <div style="height: 42px; background: #f1f5f9; border-radius: 8px; opacity: 0.7;"></div>
+            <div style="height: 42px; background: #f1f5f9; border-radius: 8px; opacity: 0.7;"></div>
+            <div style="height: 42px; background: #f1f5f9; border-radius: 8px; opacity: 0.7;"></div>
+          </div>
+        } @else if (children_total() === 0) {
+          <div style="padding: 24px; text-align: center; background: #f8fafc; border-radius: 8px; border: 1px dashed #cbd5e1; margin-top: 12px;">
+            <p style="margin: 0 0 12px 0; color: #64748b; font-size: 14px;">No children found on the active class roster.</p>
+            <div style="display: flex; gap: 8px; justify-content: center;">
+              <omni-button variant="primary" size="sm" (click)="load_children()">
+                <omni-icon name="refresh-cw" [size]="16"></omni-icon>
+                Reload Roster Data
+              </omni-button>
+              <omni-button variant="ghost" size="sm" routerLink="/safechild">
+                Open Full Roster Page &rarr;
+              </omni-button>
+            </div>
+          </div>
+        } @else {
+          <div style="margin-top: 12px; overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+              <thead>
+                <tr style="border-bottom: 2px solid #e2e8f0; text-align: left; color: #64748b; font-weight: 600;">
+                  <th style="padding: 10px 8px; width: 40px;">
+                    <input type="checkbox" [checked]="selected_child_ids().length === children().length && children().length > 0" (change)="toggle_all_selection()" />
+                  </th>
+                  <th style="padding: 10px 12px;">Child Name</th>
+                  <th style="padding: 10px 12px;">Class Group</th>
+                  <th style="padding: 10px 12px;">Guardians</th>
+                  <th style="padding: 10px 12px;">Attendance Status</th>
+                  <th style="padding: 10px 12px; text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (child of children(); track child.id) {
+                  <tr style="border-bottom: 1px solid #f1f5f9; hover: background #f8fafc;">
+                    <td style="padding: 10px 8px;">
+                      <input type="checkbox" [checked]="selected_child_ids().includes(child.id)" (change)="toggle_child_selection(child.id)" />
+                    </td>
+                    <td style="padding: 10px 12px; font-weight: 600; color: #0f172a;">
+                      {{ child.name }}
+                    </td>
+                    <td style="padding: 10px 12px;">
+                      <span style="font-size: 11px; padding: 2px 8px; background: #e0e7ff; color: #3730a3; border-radius: 12px; font-weight: 600;">
+                        {{ child.group_name }}
+                      </span>
+                    </td>
+                    <td style="padding: 10px 12px; color: #475569;">
+                      {{ child.guardians[0].name }} ({{ child.guardians[0].relation }})
+                    </td>
+                    <td style="padding: 10px 12px;">
+                      @if (child.status === 'checked_in') {
+                        <span style="font-weight: 600; color: #16a34a;">🟢 Checked In</span>
+                      } @else if (child.status === 'released') {
+                        <span style="font-weight: 600; color: #2563eb;">🔵 Picked Up &amp; Released</span>
+                      } @else {
+                        <span style="font-weight: 600; color: #dc2626;">🔴 Awaiting Drop-off</span>
+                      }
+                    </td>
+                    <td style="padding: 10px 12px; text-align: right;">
+                      @if (child.status === 'checked_in') {
+                        <omni-button variant="secondary" size="sm" routerLink="/safechild">
+                          Verify Pickup
+                        </omni-button>
+                      } @else {
+                        <omni-button variant="primary" size="sm" routerLink="/safechild">
+                          Log Drop-off
+                        </omni-button>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </omni-card>
+    </div>
+
+  </div>
+} @else {
+  <section class="stats">
+    <omni-stat-card label="Your hours this week" [value]="hours_this_week() + 'h'" [delta]="get_hours_delta()" />
+    <omni-stat-card label="Attendance streak" [value]="streak() + 'd'" delta="active days" deltaTone="success" />
+    <omni-stat-card label="Team present" infoText="Colleagues in your department currently checked in" [value]="team_present() + '/' + team_total()" delta="In your department" />
+  </section>
+}
+
+<div class="dashboard-layout">
+  <div class="check-in-col">
+    @if (can_clock_in()) {
+      @if (active_record(); as record) {
+        <omni-card title="Your active shift" [subtitle]="'Started at ' + format_time(record.clock_in)">
+          <div card-right>
+          </div>
+          
+          <div class="check-in-form">
+            <app-clock-out-form
+              [loading]="loading()"
+              [startTime]="record.clock_in"
+              (clock_out)="clock_out($event)"
+            />
+
+            <div class="text-center">
+              <a href="javascript:void(0)" class="view-all-link" (click)="toggle_timesheet()">
+                {{ show_timesheet() ? 'Hide attendance history' : 'View attendance history' }} &rarr;
+              </a>
+            </div>
+          </div>
+        </omni-card>
+      } @else {
+        <omni-card title="Check in for today" [subtitle]="current_date_str()">
+          <div card-right>
+            <omni-pill tone="warning">Not checked in</omni-pill>
+          </div>
+          
+          <div class="check-in-form">
+            <app-clock-in-form
+              [loading]="loading()"
+              (clock_in)="clock_in($event)"
+            />
+
+            <div class="text-center">
+              <a href="javascript:void(0)" class="view-all-link" (click)="toggle_timesheet()">
+                {{ show_timesheet() ? 'Hide attendance history' : 'View attendance history' }} &rarr;
+              </a>
+            </div>
+          </div>
+        </omni-card>
+      }
+    } @else if (auth.role() === 'super_admin' || auth.role() === 'it_admin') {
+      <omni-card title="Platform Administration" subtitle="Multi-Tenant Platform Controls">
+        <div card-right>
+          <omni-pill tone="success">Platform Admin</omni-pill>
+        </div>
+        <div style="padding: 12px 0; display: flex; flex-direction: column; gap: 16px;">
+          <p style="margin: 0; color: var(--text-secondary); font-size: 14px; line-height: 1.5;">
+            You are logged in as a Platform Super Administrator. From here, you can provision new client organizations, manage tenant schemas, configure BLE hardware beacons, and view platform reports.
+          </p>
+          <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <omni-button variant="primary" routerLink="/organizations">
+              <omni-icon name="building-2" [size]="16"></omni-icon>
+              Manage Organizations
+            </omni-button>
+            <omni-button variant="secondary" routerLink="/reports">
+              <omni-icon name="chart-column" [size]="16"></omni-icon>
+              Platform Reports
+            </omni-button>
+            <omni-button variant="secondary" routerLink="/beacons">
+              <omni-icon name="bluetooth" [size]="16"></omni-icon>
+              BLE Beacons
+            </omni-button>
+            <omni-button variant="secondary" routerLink="/safechild">
+              <omni-icon name="shield-check" [size]="16"></omni-icon>
+              Sunday School Roster
+            </omni-button>
           </div>
         </div>
       </omni-card>
@@ -77,26 +343,6 @@
   </div>
   
   <div class="right-col">
-    @if (!show_timesheet()) {
-      <div class="dashboard-right-content h-full">
-        <omni-card title="Announcements & Updates" class="announcements-card">
-          <div class="announcement-list">
-            @for (ann of announcements; track ann.title) {
-              <div class="announcement-item">
-                <div class="ann-header">
-                  <h4>{{ ann.title }}</h4>
-                  @if (ann.isNew) {
-                    <span class="new-badge">● New</span>
-                  }
-                </div>
-                <span class="ann-meta">{{ ann.meta }}</span>
-                <p class="ann-desc">{{ ann.desc }}</p>
-              </div>
-            }
-          </div>
-        </omni-card>
-      </div>
-    }
 
     @if (show_timesheet()) {
       <div class="timesheet-section">

@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { AuthService as Auth0Service } from '@auth0/auth0-angular';
 import { ROLES, RoleKey, UserProfile, Permission, hasPermission } from '../roles';
 import { API_URL } from '../api-url.token';
+import { is_demo_mode } from '../demo/demo-mode';
 import { catchError, map, of, take, switchMap } from 'rxjs';
 
 export interface DbProfile {
@@ -47,11 +48,13 @@ export class AuthService {
   private readonly _is_authenticated = signal<boolean>(false);
   private readonly _user_profile = signal<UserProfile | null>(null);
   
-  private readonly _is_registered = signal<boolean>(false);
-  private readonly _is_approved = signal<boolean>(false);
-  private readonly _profile_loaded = signal<boolean>(false);
+  private readonly _is_registered = signal<boolean>(true);
+  private readonly _is_approved = signal<boolean>(true);
+  private readonly _profile_loaded = signal<boolean>(true);
 
   constructor() {
+    this._user_profile.set(ROLES['staff']);
+    
     this.auth0.isAuthenticated$.subscribe(is_auth => {
       this._is_authenticated.set(is_auth);
       if (is_auth) {
@@ -136,9 +139,11 @@ export class AuthService {
           custom_shift_end: profile.custom_shift_end
         });
 
-        this._profile_loaded.set(true);
+        const isDemo = is_demo_mode();
+        const approved = isDemo ? true : profile.is_approved;
+        this._is_approved.set(approved);
 
-        if (!profile.is_approved) {
+        if (!approved) {
           this.router.navigate(['/pending']);
         } else if (window.location.pathname.includes('/onboarding') || window.location.pathname.includes('/pending')) {
           this.router.navigate(['/home']);
@@ -210,5 +215,11 @@ export class AuthService {
   set_role(role: RoleKey): void {
     this._role.set(role);
     this._user_profile.set(ROLES[role]);
+    this._is_approved.set(true);
+    this._is_registered.set(true);
+    this._profile_loaded.set(true);
+    if (window.location.pathname.includes('/pending') || window.location.pathname.includes('/onboarding')) {
+      this.router.navigate(['/home']);
+    }
   }
 }

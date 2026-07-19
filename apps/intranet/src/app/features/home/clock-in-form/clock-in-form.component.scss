@@ -64,3 +64,71 @@
     padding: 12px;
   }
 }
+
+.beacon-status-box {
+  padding: 10px 12px;
+  background: var(--bg-surface, #f8fafc);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: var(--radius-md, 8px);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  .beacon-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .beacon-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #16a34a;
+
+      &.pulse {
+        box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.7);
+        animation: beacon-pulse-anim 1.8s infinite;
+      }
+    }
+
+    .beacon-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--adept-navy-700, #4338ca);
+      font-weight: 700;
+    }
+  }
+
+  .beacon-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    .beacon-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--fg-1, #0f172a);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .beacon-meta {
+      font-size: 11px;
+      color: var(--fg-3, #64748b);
+    }
+  }
+}
+
+@keyframes beacon-pulse-anim {
+  0% {
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(22, 163, 74, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0);
+  }
+}

@@ -118,7 +118,7 @@ def test_admin_guard_blocks_regular_user(client, app, mock_verify_jwt):
 def test_get_pending_users(client, app, mock_verify_jwt):
     """Test that HR/Admins can retrieve a list of pending users."""
     with app.app_context():
-        hr_role = Role.query.filter_by(name='hr').first()
+        hr_role = Role.query.filter_by(name='hr_admin').first()
         hr_user = Employee(auth0_id='auth0|hr', email='hr@adept.com', first_name='HR', last_name='User', role_id=hr_role.id, is_approved=True)
         pending_user = Employee(auth0_id='auth0|pending', email='pending@adept.com', first_name='Pen', last_name='Ding', is_approved=False)
         db.session.add_all([hr_user, pending_user])
@@ -135,7 +135,7 @@ def test_get_pending_users(client, app, mock_verify_jwt):
 def test_admin_approve_user(client, app, mock_verify_jwt):
     """Test the full flow of an HR admin approving a pending user and assigning roles."""
     with app.app_context():
-        hr_role = Role.query.filter_by(name='hr').first()
+        hr_role = Role.query.filter_by(name='hr_admin').first()
         
         hr_user = Employee(auth0_id='auth0|hr', email='hr@adept.com', first_name='HR', last_name='User', role_id=hr_role.id, is_approved=True)
         

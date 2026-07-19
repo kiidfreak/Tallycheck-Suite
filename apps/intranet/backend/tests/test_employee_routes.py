@@ -13,7 +13,7 @@ def get_auth_headers():
 @pytest.fixture
 def setup_data(app):
     with app.app_context():
-        hr_role = Role.query.filter_by(name='hr').first()
+        hr_role = Role.query.filter_by(name='hr_admin').first()
         staff_role = Role.query.filter_by(name='staff').first()
         dept_eng = Department.query.filter_by(name='software_development').first()
         

@@ -1,17 +1,18 @@
 import { ApplicationConfig, importProvidersFrom, provideZoneChangeDetection } from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
-import { LucideAngularModule, icons } from 'lucide-angular';
+import { LucideAngularModule, icons, TriangleAlert } from 'lucide-angular';
 import { provideAuth0, authHttpInterceptorFn } from '@auth0/auth0-angular';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { appRoutes } from './app.routes';
 import { environment } from '../environments/environment';
-import { API_URL, authInterceptor } from '@omni/auth';
+import { API_URL, authInterceptor, demoInterceptor } from '@omni/auth';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(appRoutes, withComponentInputBinding()),
     provideHttpClient(withInterceptors([
+      demoInterceptor,
       authInterceptor,
       authHttpInterceptorFn
     ])),
@@ -38,6 +39,6 @@ export const appConfig: ApplicationConfig = {
         ]
       }
     }),
-    importProvidersFrom(LucideAngularModule.pick(icons)),
+    importProvidersFrom(LucideAngularModule.pick({ ...icons, AlertTriangle: TriangleAlert })),
   ],
 };

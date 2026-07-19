@@ -14,7 +14,7 @@ def get_auth_headers():
 @pytest.fixture
 def setup_users(app):
     with app.app_context():
-        hr_role = Role.query.filter_by(name='hr').first()
+        hr_role = Role.query.filter_by(name='hr_admin').first()
         staff_role = Role.query.filter_by(name='staff').first()
         
         hr_user = Employee(auth0_id='auth0|hr', email='hr@example.com', first_name='H', last_name='R', is_approved=True, role_id=hr_role.id)

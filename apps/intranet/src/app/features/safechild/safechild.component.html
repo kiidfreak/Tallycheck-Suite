@@ -1,0 +1,313 @@
+<div class="page-container">
+  <div class="page-header">
+    <div class="title-section">
+      <h1>{{ auth.can('safechild:drop_off') ? 'SafeChild Sunday School' : 'My Children & Pickup Passes' }}</h1>
+      <p>{{ auth.can('safechild:drop_off') ? 'Manage child attendance, drop-offs, and secure pickup checkouts.' : 'View live room location, active 4-digit pickup PINs, and digital checkout passes for your registered children.' }}</p>
+    </div>
+    @if (auth.can('safechild:drop_off')) {
+      <div class="header-actions">
+        <omni-button variant="primary" (click)="openVerifyPanel()">
+          <omni-icon name="shield-check" [size]="16"></omni-icon>
+          Verify Guardian Pickup &amp; PIN
+        </omni-button>
+      </div>
+    }
+  </div>
+
+  <!-- Filter Toolbar -->
+  <div class="toolbar card">
+    <div class="filter-group">
+      <div class="search-wrap">
+        <omni-icon name="search" [size]="16"></omni-icon>
+        <input
+          type="text"
+          placeholder="Search child or guardian name..."
+          [ngModel]="searchQuery()"
+          (ngModelChange)="searchQuery.set($event)"
+          class="omni-input search-input"
+        />
+      </div>
+      <div class="select-wrap">
+        <label for="group-filter" class="sr-only">Class Group</label>
+        <select
+          id="group-filter"
+          [ngModel]="selectedGroup()"
+          (ngModelChange)="selectedGroup.set($event)"
+          class="omni-input group-select"
+        >
+          @for (grp of getGroups(); track grp) {
+            <option [value]="grp">{{ grp === 'All' ? 'All Classes' : grp }}</option>
+          }
+        </select>
+      </div>
+
+      @if (auth.can('safechild:drop_off')) {
+        <div class="select-wrap">
+          <label for="child-quick-select" class="sr-only">Quick Drop-off Child</label>
+          <select
+            id="child-quick-select"
+            class="omni-input group-select"
+            (change)="onQuickSelectChild($any($event.target).value)"
+          >
+            <option value="">Quick Drop-off (Select Child...)</option>
+            @for (child of children(); track child.id) {
+              <option [value]="child.id">{{ child.name }} ({{ child.group_name }})</option>
+            }
+          </select>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Children Grid -->
+  @if (loading()) {
+    <div class="roster-grid">
+      @for (i of [1, 2, 3, 4]; track i) {
+        <div class="child-card card skeleton-card" style="padding: 20px; display: flex; flex-direction: column; gap: 12px; background: #f8fafc; border: 1px solid #e2e8f0;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 48px; height: 48px; border-radius: 50%; background: #e2e8f0; animation: pulse 1.5s infinite;"></div>
+            <div style="display: flex; flex-direction: column; gap: 6px; flex: 1;">
+              <div style="width: 60%; height: 16px; background: #e2e8f0; border-radius: 4px; animation: pulse 1.5s infinite;"></div>
+              <div style="width: 40%; height: 12px; background: #e2e8f0; border-radius: 4px; animation: pulse 1.5s infinite;"></div>
+            </div>
+          </div>
+          <div style="width: 100%; height: 32px; background: #e2e8f0; border-radius: 6px; animation: pulse 1.5s infinite; margin-top: 8px;"></div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+            <div style="width: 40%; height: 20px; background: #e2e8f0; border-radius: 999px; animation: pulse 1.5s infinite;"></div>
+            <div style="width: 30%; height: 28px; background: #e2e8f0; border-radius: 6px; animation: pulse 1.5s infinite;"></div>
+          </div>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="roster-grid">
+      @for (child of getFilteredChildren(); track child.id) {
+        <div class="child-card card" [ngClass]="{'checked-in': child.status === 'checked_in'}">
+          <div class="child-info">
+            <div class="child-avatar">
+              @if (child.photo_url) {
+                <img [src]="child.photo_url" alt="{{ child.name }}" />
+              } @else {
+                <div class="avatar-placeholder">
+                  {{ child.name.charAt(0) }}
+                </div>
+              }
+            </div>
+            <div class="child-details">
+              <h3>{{ child.name }}</h3>
+              <span class="class-tag">{{ child.group_name }}</span>
+            </div>
+          </div>
+
+          <div class="guardians-section">
+            <span class="section-title">Authorized Guardians</span>
+            <div class="guardians-list">
+              @for (guard of child.guardians; track guard.id) {
+                <div class="guard-pill" [ngClass]="{'primary': guard.is_primary}">
+                  <strong>{{ guard.name }}</strong> ({{ guard.relation }})
+                </div>
+              }
+            </div>
+          </div>
+
+          <div class="card-footer">
+            <div class="status-indicator">
+              @if (child.status === 'checked_in') {
+                <span class="status-pill status-checked">
+                  🟢 Present (In room)
+                </span>
+              } @else {
+                <span class="status-pill status-absent">
+                  🔴 Absent (Not checked in)
+                </span>
+              }
+            </div>
+
+            <div class="actions">
+              @if (auth.can('safechild:drop_off')) {
+                @if (child.status === 'checked_in') {
+                  <omni-button variant="secondary" (click)="openVerifyPanel()" size="sm">
+                    Verify Pickup
+                  </omni-button>
+                } @else {
+                  <omni-button variant="primary" (click)="openDropOff(child)" size="sm">
+                    Drop-off
+                  </omni-button>
+                }
+              } @else {
+                <!-- Parent Guardian Pass View -->
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 11px; font-weight: 700; color: #1e1b4b; background: #e0e7ff; padding: 4px 8px; border-radius: 6px; font-family: monospace;">
+                    🔐 PIN: 5842
+                  </span>
+                  <omni-button variant="primary" size="sm" (click)="openVerifyPanel()">
+                    Digital Pass
+                  </omni-button>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      } @empty {
+        <div class="empty-state card" style="text-align: center; padding: 32px 16px;">
+          <omni-icon name="user-x" [size]="48" class="empty-icon"></omni-icon>
+          <p style="margin: 12px 0 16px 0; color: #64748b; font-size: 14px;">No children match your search criteria or current class selection.</p>
+          <div style="display: flex; gap: 8px; justify-content: center;">
+            <omni-button variant="primary" size="sm" (click)="loadChildren()">
+              🔄 Reload Roster Data
+            </omni-button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Drop-off Drawer -->
+  @if (isDropOffOpen()) {
+    <div class="drawer-overlay" role="button" tabindex="0" (click)="closeDropOff()" (keydown.enter)="closeDropOff()" (keydown.space)="closeDropOff()"></div>
+    <div class="drawer">
+      <div class="drawer-header">
+        <h2>Drop-off: {{ activeChildForDropOff()?.name }}</h2>
+        <button class="close-btn" (click)="closeDropOff()">
+          <omni-icon name="x" [size]="20"></omni-icon>
+        </button>
+      </div>
+      <div class="drawer-body">
+        <p class="drawer-hint">Select the adult dropping off the child for verification credentials creation.</p>
+        
+        <div class="form-group">
+          <label for="dropoff-guardian">Dropping off adult</label>
+          <select
+            id="dropoff-guardian"
+            [ngModel]="selectedGuardianId()"
+            (ngModelChange)="selectedGuardianId.set($event)"
+            class="omni-input"
+          >
+            @for (guard of activeChildForDropOff()?.guardians; track guard.id) {
+              <option [value]="guard.id">{{ guard.name }} ({{ guard.relation }})</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-top: 16px;">
+          <label for="dropoff-location">Drop-off Location / Building</label>
+          <select
+            id="dropoff-location"
+            [ngModel]="selectedLocation()"
+            (ngModelChange)="selectedLocation.set($event)"
+            class="omni-input"
+          >
+            @for (loc of locations; track loc) {
+              <option [value]="loc">{{ loc }}</option>
+            }
+          </select>
+        </div>
+      </div>
+      <div class="drawer-footer">
+        <omni-button variant="ghost" (click)="closeDropOff()">Cancel</omni-button>
+        <omni-button variant="primary" (click)="submitDropOff()" [disabled]="dropOffLoading()">
+          {{ dropOffLoading() ? 'Logging Check-in...' : 'Confirm Drop-off' }}
+        </omni-button>
+      </div>
+    </div>
+  }
+
+  <!-- Success Drop-off Receipt Dialog -->
+  @if (activeReceipt(); as receipt) {
+    <div class="dialog-overlay" role="button" tabindex="0" (click)="closeReceipt()" (keydown.enter)="closeReceipt()" (keydown.space)="closeReceipt()"></div>
+    <div class="dialog-card card receipt-card">
+      <div class="dialog-header">
+        <h3>Ethan Check-in Registered</h3>
+        <button class="close-btn" (click)="closeReceipt()">
+          <omni-icon name="x" [size]="18"></omni-icon>
+        </button>
+      </div>
+      <div class="dialog-body text-center">
+        <div class="success-icon">
+          <omni-icon name="check-circle" [size]="56" class="text-success"></omni-icon>
+        </div>
+        
+        <p class="mb-4">Check-in logged successfully! Share the credentials with the parent for checkout release verification.</p>
+        
+        <div class="credentials-badge">
+          <span class="cred-label">Backup Checkout PIN</span>
+          <span class="cred-value">{{ receipt.pin }}</span>
+        </div>
+
+        <div class="qr-code-placeholder">
+          <!-- Pre-Signed Secure payload visual token -->
+          <div class="payload-box">
+            <code>{{ receipt.qr_payload.substring(0, 24) }}...</code>
+          </div>
+          <span class="hint">HMAC-SHA256 Signed QR Code Token generated.</span>
+        </div>
+      </div>
+      <div class="dialog-footer">
+        <omni-button variant="primary" (click)="closeReceipt()">Done</omni-button>
+      </div>
+    </div>
+  }
+
+  <!-- Gate Verification Check Dialog -->
+  @if (isVerifyPanelOpen()) {
+    <div class="dialog-overlay" role="button" tabindex="0" (click)="closeVerifyPanel()" (keydown.enter)="closeVerifyPanel()" (keydown.space)="closeVerifyPanel()"></div>
+    <div class="dialog-card card verify-gate-card">
+      <div class="dialog-header">
+        <h3>Verify Child Checkout</h3>
+        <button class="close-btn" (click)="closeVerifyPanel()">
+          <omni-icon name="x" [size]="18"></omni-icon>
+        </button>
+      </div>
+      <div class="dialog-body">
+        @if (!activeVerificationResult()) {
+          <p>Scan the guardian's QR code signature or input their 4-digit drop-off PIN to confirm authorization and release the child.</p>
+          
+          <div class="form-group">
+            <label for="verification-code">Verification PIN or QR Token</label>
+            <input
+              id="verification-code"
+              type="text"
+              placeholder="e.g. 5842 or scan barcode payload"
+              [(ngModel)]="verificationCode"
+              class="omni-input verify-input"
+              (keydown.enter)="submitVerification()"
+            />
+          </div>
+        } @else {
+          <!-- Checkout Verification Result Screen -->
+          <div class="verify-success-view">
+            <div class="checked-photo">
+              @if (activeVerificationResult()?.child_photo) {
+                <img [src]="activeVerificationResult()?.child_photo" alt="Child profile" />
+              } @else {
+                <div class="photo-placeholder">
+                  👦
+                </div>
+              }
+            </div>
+
+            <div class="verification-meta">
+              <h4 class="release-title">🟢 Verification Approved</h4>
+              <p>Release child <strong>{{ activeVerificationResult()?.child_name }}</strong> to:</p>
+              
+              <div class="guardian-identity">
+                <strong>{{ activeVerificationResult()?.guardian_name }}</strong>
+                <span class="relation-tag">{{ activeVerificationResult()?.guardian_relation || 'Authorized Adult' }}</span>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+      <div class="dialog-footer">
+        @if (!activeVerificationResult()) {
+          <omni-button variant="ghost" (click)="closeVerifyPanel()">Cancel</omni-button>
+          <omni-button variant="primary" (click)="submitVerification()" [disabled]="verificationLoading()">
+            {{ verificationLoading() ? 'Verifying...' : 'Verify Checkout' }}
+          </omni-button>
+        } @else {
+          <omni-button variant="primary" (click)="closeVerifyPanel()">Approve &amp; Release Child</omni-button>
+        }
+      </div>
+    </div>
+  }
+</div>

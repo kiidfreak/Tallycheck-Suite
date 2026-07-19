@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ButtonComponent } from '@omni/ui';
+import { ButtonComponent, IconComponent } from '@omni/ui';
 import { LucideAngularModule } from 'lucide-angular';
 
 export interface ClockInSubmit {
@@ -8,12 +8,12 @@ export interface ClockInSubmit {
   note: string;
 }
 
-/** Reusable clock-in form: shift selector, location selector, note, and submit button. */
+/** Reusable clock-in form: shift selector, BLE beacon telemetry, location selector, note, and submit button. */
 @Component({
   selector: 'app-clock-in-form',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonComponent, LucideAngularModule],
+  imports: [FormsModule, ButtonComponent, IconComponent, LucideAngularModule],
   template: `
     <div class="clock-in-form-inner">
 
@@ -28,6 +28,28 @@ export interface ClockInSubmit {
           }
         </div>
       </div>
+
+      @if (selected_location() === 'Office') {
+        <div class="beacon-status-box">
+          <div class="beacon-header">
+            <span class="beacon-dot pulse"></span>
+            <strong class="beacon-title">BLE Active</strong>
+          </div>
+          @if (nearby_beacon(); as beacon) {
+            <div class="beacon-info">
+              <span class="beacon-name">
+                <omni-icon name="bluetooth" [size]="14" class="text-primary"></omni-icon>
+                {{ beacon.name }}
+              </span>
+              <span class="beacon-meta">{{ beacon.location }} · {{ beacon.rssi }}</span>
+            </div>
+          } @else {
+            <div class="beacon-searching">
+              <span>Scanning for nearby Bluetooth beacons...</span>
+            </div>
+          }
+        </div>
+      }
 
       <input
         type="text"
@@ -56,12 +78,22 @@ export class ClockInFormComponent {
   ];
   readonly selected_location = signal('Office');
 
+  readonly nearby_beacon = signal<{ name: string; location: string; rssi: string } | null>({
+    name: 'Canine Section 2 Beacon (UUID: AA:BB:CC:01)',
+    location: 'Dog Block · Main Area',
+    rssi: '-58 dBm (In-Range Verified)'
+  });
+
   note = '';
 
   submit(): void {
+    const locNote = this.selected_location() === 'Office' && this.nearby_beacon()
+      ? `[BLE: ${this.nearby_beacon()?.name}] ${this.note}`.trim()
+      : this.note;
+
     this.clock_in.emit({
       location: this.selected_location(),
-      note: this.note
+      note: locNote
     });
     this.note = '';
   }

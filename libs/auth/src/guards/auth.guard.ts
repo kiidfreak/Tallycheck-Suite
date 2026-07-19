@@ -6,8 +6,14 @@ import { canAccess } from '../roles';
 import { filter, map, switchMap, take } from 'rxjs';
 import { toObservable } from '@angular/core/rxjs-interop';
 
+import { is_demo_mode } from '../demo/demo-mode';
+
 /** Redirect to /login unless a session exists via Auth0. */
 export const authGuard: CanActivateFn = () => {
+  if (is_demo_mode()) {
+    return true;
+  }
+
   const auth0 = inject(Auth0Service);
   const router = inject(Router);
   return auth0.isLoading$.pipe(

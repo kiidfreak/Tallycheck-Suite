@@ -3,7 +3,7 @@ from flask import Blueprint, request, Response
 from sqlalchemy import or_, func
 from models import db, Employee, Department, Role
 from utils.shift_data import ShiftType, ShiftHours
-from auth_routes import require_auth, roles_required
+from auth_routes import require_auth, roles_required, ADMIN_ROLES
 from py_errors import NotFoundError, ValidationError, EmailExistsError, ForbiddenError
 from py_success import SuccessResponse
 from schemas.employees import EmployeeSchema
@@ -13,7 +13,7 @@ employee_bp: Blueprint = Blueprint('employees', __name__, url_prefix='/employees
 
 @employee_bp.route('', methods=['GET'])
 @require_auth
-@roles_required('hr', 'super_admin')
+@roles_required(*ADMIN_ROLES)
 def list_employees() -> Tuple[Response, int]:
     page: int = request.args.get('page', 1, type=int)
     per_page: int = request.args.get('per_page', 20, type=int)
@@ -77,7 +77,7 @@ def list_employees() -> Tuple[Response, int]:
 
 @employee_bp.route('', methods=['POST'])
 @require_auth
-@roles_required('hr', 'super_admin')
+@roles_required(*ADMIN_ROLES)
 def create_employee() -> Tuple[Response, int]:
     body: dict[str, Any] = request.get_json() or {}
     email: Optional[str] = body.get('email')
@@ -139,7 +139,7 @@ def create_employee() -> Tuple[Response, int]:
 
 @employee_bp.route('/<uuid:id>', methods=['GET'])
 @require_auth
-@roles_required('hr', 'super_admin')
+@roles_required(*ADMIN_ROLES)
 def get_employee(id: str) -> Tuple[Response, int]:
     emp = Employee.query.get(id)
     if not emp:
@@ -152,7 +152,7 @@ def get_employee(id: str) -> Tuple[Response, int]:
 
 @employee_bp.route('/<uuid:id>', methods=['PUT'])
 @require_auth
-@roles_required('hr', 'super_admin')
+@roles_required(*ADMIN_ROLES)
 def update_employee(id: str) -> Tuple[Response, int]:
     emp = Employee.query.get(id)
     if not emp:
@@ -219,7 +219,7 @@ def update_employee(id: str) -> Tuple[Response, int]:
 
 @employee_bp.route('/<uuid:id>/deactivate', methods=['POST'])
 @require_auth
-@roles_required('hr', 'super_admin')
+@roles_required(*ADMIN_ROLES)
 def deactivate_employee(id: str) -> Tuple[Response, int]:
     emp = Employee.query.get(id)
     if not emp:
@@ -236,7 +236,7 @@ def deactivate_employee(id: str) -> Tuple[Response, int]:
 
 @employee_bp.route('/<uuid:id>/approve', methods=['POST'])
 @require_auth
-@roles_required('hr', 'super_admin')
+@roles_required(*ADMIN_ROLES)
 def approve_employee(id: str) -> Tuple[Response, int]:
     emp = Employee.query.get(id)
     if not emp:

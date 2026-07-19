@@ -180,7 +180,7 @@ def get_me() -> Tuple[Response, int]:
 # --- ADMIN ENDPOINTS ---
 
 @auth_bp.route('/metadata', methods=['GET'])
-@roles_required('super_admin', 'hr')
+@roles_required(*ADMIN_ROLES)
 def get_metadata() -> Tuple[Response, int]:
     """Admin only: Fetch all roles and departments for dropdowns."""
     roles = Role.query.all()
@@ -195,7 +195,7 @@ def get_metadata() -> Tuple[Response, int]:
     ).write_response()
 
 @auth_bp.route('/users/pending', methods=['GET'])
-@roles_required('super_admin', 'hr')
+@roles_required(*ADMIN_ROLES)
 def get_pending_users() -> Tuple[Response, int]:
     """Admin only: Fetch all users awaiting approval."""
     pending = Employee.query.filter_by(is_approved=False).all()
@@ -207,7 +207,7 @@ def get_pending_users() -> Tuple[Response, int]:
     ).write_response()
 
 @auth_bp.route('/users/<uuid:user_id>/approve', methods=['POST'])
-@roles_required('super_admin', 'hr')
+@roles_required(*ADMIN_ROLES)
 def approve_user(user_id: str) -> Tuple[Response, int]:
     """Admin only: Approves a pending user and assigns their role/dept."""
     employee = db.session.get(Employee, user_id)
@@ -248,30 +248,31 @@ def approve_user(user_id: str) -> Tuple[Response, int]:
     ).write_response()
 
 
-def seed_roles_and_departments() -> None:
-    role_names: list[str] = ['staff', 'hr', 'manager', 'super_admin', 'call_centre_agent', 'call_centre_admin']
-    for name in role_names:
-        if not Role.query.filter_by(name=name).first():
-            db.session.add(Role(role=name))
-    
-    """
-    Adept has 5 departments, Sales (Antony), Marketing (Currently no manager), Operations & Projects (William), Finance (Francis), 
-    HR (Kevina) and IT (Protus). All of them report to Mercy. Francis, Kevina and Protus are all contractors, not internal staff.
+def seed_roles() -> None:
+    """Ensure every canonical role exists in the active tenant schema.
 
-    Operations has 5 sub-departments: Contact center (Caroline), Business Efficiency (Kelvin), Cloud & Automation (Fuji), 
-    S/ware Eng (Clinton) and AI (Teresia). All of them report to William.
+    Additive and idempotent: missing roles are inserted, existing rows are never
+    modified or deleted. Tenants carrying legacy roles ('hr', 'manager') keep
+    them — the guards in helpers/auth_helper.py still accept those names.
+
+    Departments are deliberately NOT seeded here. They are tenant-specific (a
+    university has schools, a company has business units), so a shared default
+    list would inject one tenant's org chart into every other tenant. Seed them
+    per tenant instead — see seed_org.py.
     """
-    dept_names: list[str] = ['sales', 'marketing', 'operations', 'finance', 'hr', 'it', 'contact_center', 
-        'business_efficiency', 'software_development', 'cloud_and_automation', 'artificial_intelligence']
-    for name in dept_names:
-        if not Department.query.filter_by(name=name).first():
-            db.session.add(Department(name=name))
+    existing: set[str] = {r.role for r in Role.query.all()}
+    missing: list[str] = [name for name in ALL_ROLES if name not in existing]
+    if not missing:
+        return
+
+    for name in missing:
+        db.session.add(Role(role=name))
     db.session.commit()
 
 
 def sync_internal() -> Tuple[Response, int]:
-    seed_roles_and_departments()
-    
+    seed_roles()
+
     payload: dict[str, Any] = request.user_payload  # type: ignore[attr-defined]
     sub: str = payload.get("sub", "")
     email: Optional[str] = payload.get("email")

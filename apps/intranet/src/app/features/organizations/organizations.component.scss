@@ -1,0 +1,257 @@
+.organizations-page {
+  padding: 24px 32px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.page-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+
+  h1 {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-primary, #0f172a);
+    margin: 0 0 4px 0;
+  }
+
+  .subtitle {
+    font-size: 14px;
+    color: var(--text-secondary, #64748b);
+    margin: 0;
+  }
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  margin-top: 12px;
+}
+
+.omni-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+
+  th, td {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+    font-size: 14px;
+  }
+
+  th {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--text-muted, #94a3b8);
+    letter-spacing: 0.5px;
+    background: var(--bg-surface, #f8fafc);
+  }
+}
+
+.org-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.org-info {
+  display: flex;
+  flex-direction: column;
+
+  .org-name {
+    font-weight: 600;
+    color: var(--text-primary, #0f172a);
+  }
+
+  .org-id {
+    font-size: 11px;
+    color: var(--text-muted, #94a3b8);
+    font-family: monospace;
+  }
+}
+
+.subdomain-link {
+  color: var(--primary-base, #2563eb);
+  text-decoration: none;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.schema-badge {
+  background: #f1f5f9;
+  color: #334155;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: monospace;
+}
+
+.action-btn {
+  background: transparent;
+  border: 1px solid var(--border-color, #cbd5e1);
+  border-radius: 6px;
+  padding: 6px;
+  cursor: pointer;
+  color: var(--text-secondary, #64748b);
+  transition: all 0.2s;
+
+  &:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+  }
+}
+
+.empty-cell {
+  text-align: center;
+  padding: 48px 16px;
+}
+
+/* Modal / Drawer */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-dialog {
+  width: 100%;
+  max-width: 520px;
+  padding: 24px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+
+  h2 {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0 0 4px 0;
+  }
+
+  .subtitle {
+    font-size: 13px;
+    color: var(--text-secondary, #64748b);
+    margin: 0;
+  }
+
+  .close-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted, #94a3b8);
+
+    &:hover { color: #0f172a; }
+  }
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary, #334155);
+  }
+
+  .omni-input, .omni-select {
+    padding: 10px 12px;
+    border: 1px solid var(--border-color, #cbd5e1);
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--text-primary, #0f172a);
+    background: var(--bg-surface, #f8fafc);
+    outline: none;
+    transition: border 0.2s;
+
+    &:focus {
+      border-color: var(--primary-base, #2563eb);
+      background: white;
+    }
+  }
+}
+
+.input-addon-wrapper {
+  display: flex;
+  align-items: center;
+
+  .omni-input {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    flex: 1;
+  }
+
+  .addon {
+    background: #e2e8f0;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color, #cbd5e1);
+    border-left: none;
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+    font-size: 13px;
+    color: #475569;
+    font-family: monospace;
+  }
+}
+
+.help-text {
+  font-size: 11px;
+  color: var(--text-muted, #64748b);
+
+  code {
+    color: var(--primary-base, #2563eb);
+  }
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}

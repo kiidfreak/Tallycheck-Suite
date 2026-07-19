@@ -64,7 +64,7 @@ export class TeamComponent implements OnInit {
     });
 
     const current_role = this.role();
-    if (current_role === 'hr' || current_role === 'manager' || current_role === 'super_admin') {
+    if (current_role === 'hr_admin' || current_role === 'department_manager' || current_role === 'super_admin') {
       this.team_service.get_pending_users().subscribe(users => {
         this.pending_users.set(users);
       });

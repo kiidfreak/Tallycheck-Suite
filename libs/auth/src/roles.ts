@@ -77,6 +77,7 @@ export type Permission =
   | 'safechild:drop_off'
   | 'safechild:pickup'
   | 'safechild:manage_children'
+  | 'safechild:my_children'
   // Administration
   | 'manage:users_roles'
   | 'manage:settings'
@@ -126,10 +127,10 @@ const PERMISSION_MATRIX: Record<RoleKey, Permission[]> = {
   ],
   teacher: [
     'view:own_attendance', 'clock:in_out',
-    'safechild:view_roster', 'safechild:drop_off', 'safechild:pickup', 'safechild:manage_children',
+    'safechild:view_roster', 'safechild:drop_off', 'safechild:pickup', 'safechild:manage_children', 'safechild:my_children',
   ],
   guardian: [
-    'safechild:view_roster', 'safechild:drop_off', 'safechild:pickup',
+    'safechild:view_roster', 'safechild:my_children',
   ],
   super_admin: [
     // Super admin has ALL permissions
@@ -231,11 +232,11 @@ export const ROLES: Record<RoleKey, UserProfile> = {
     tone: 'info'
   },
   teacher: {
-    first_name: 'Pastor',
-    name: 'Pastor Esther Njeri',
+    first_name: 'Teacher Alice',
+    name: 'Tr. Alice Wambui',
     role: 'Sunday School Teacher',
     department: 'Children Ministry',
-    initials: 'EN',
+    initials: 'AW',
     tone: 'purple'
   },
   guardian: {
@@ -281,16 +282,16 @@ export const DEMO_PASSWORD = 'adept';
 // ─── Route Access (legacy, kept for backward compat with roleGuard) ─
 const COMM = ['communication', 'communication/chat', 'communication/email'];
 export const ROLE_ACCESS: Record<RoleKey, string[]> = {
-  staff:              ['home', ...COMM, 'departments', 'attendance'],
+  staff:              ['home', ...COMM, 'departments', 'attendance', 'attendance-records'],
   company_admin:      ['*'],
-  hr_admin:           ['home', ...COMM, 'team', 'planning', 'reports', 'users', 'employees', 'departments', 'beacons', 'safechild', 'attendance'],
-  department_manager: ['home', ...COMM, 'team', 'planning', 'reports', 'departments', 'safechild', 'attendance'],
+  hr_admin:           ['home', ...COMM, 'team', 'planning', 'reports', 'users', 'employees', 'departments', 'beacons', 'safechild', 'attendance', 'attendance-records'],
+  department_manager: ['home', ...COMM, 'team', 'planning', 'reports', 'departments', 'safechild', 'attendance', 'attendance-records'],
   school_admin:       ['*'],
   super_admin:        ['*'],
-  lecturer:           ['home', 'attendance', 'departments', 'reports'],
-  teacher:            ['home', 'safechild', 'children', 'attendance'],
+  lecturer:           ['home', 'attendance', 'attendance-records', 'departments', 'reports'],
+  teacher:            ['home', 'safechild', 'children', 'attendance', 'attendance-records'],
   guardian:           ['home', 'safechild', 'my-children', 'pickup-history'],
-  it_admin:           ['home', 'settings', 'audit', 'beacons'],
+  it_admin:           ['home', 'settings', 'audit', 'beacons', 'attendance-records'],
 };
 
 export function canAccess(role: RoleKey, routeId: string): boolean {

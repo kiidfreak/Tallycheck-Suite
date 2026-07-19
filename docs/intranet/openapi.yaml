@@ -542,6 +542,53 @@ components:
           example: 2
 
     # ==========================================================
+    # ORGANIZATIONS (MULTI-TENANCY)
+    # ==========================================================
+    Organization:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "org_0D0uiOBBi91ZiW0v"
+        name:
+          type: string
+          example: "Daystar University"
+        domain:
+          type: string
+          example: "daystar"
+        schema_name:
+          type: string
+          example: "tenant_org_0d0uiobbi91ziw0v"
+        is_active:
+          type: boolean
+          example: true
+        org_type:
+          type: string
+          enum: [corporate, education]
+          example: "education"
+        admin_email:
+          type: string
+          example: "anne@daystar.ac.ke"
+
+    CreateOrganizationPayload:
+      type: object
+      required: [name, domain, org_type, admin_email]
+      properties:
+        name:
+          type: string
+          example: "Acme Corporation"
+        domain:
+          type: string
+          example: "acme"
+        org_type:
+          type: string
+          enum: [corporate, education]
+          example: "corporate"
+        admin_email:
+          type: string
+          example: "admin@acme.com"
+
+    # ==========================================================
     # REPORTS
     # ==========================================================
     ReportEmployeeAttendance:

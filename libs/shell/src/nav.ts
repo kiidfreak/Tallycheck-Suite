@@ -28,13 +28,19 @@ export function navForRole(role: RoleKey): NavGroup[] {
   const workspace: NavItem[] = [
     { id: 'home', label: 'Home', icon: 'house' },
   ];
+  if (can('clock:in_out') && role !== 'super_admin' && role !== 'it_admin') {
+    workspace.push({ id: 'attendance-records', label: 'My Attendance', icon: 'calendar' });
+  }
+  if (can('manage:organizations')) {
+    workspace.push({ id: 'organizations', label: 'Organizations', icon: 'building-2' });
+  }
   if (can('view:departments')) {
     workspace.push({ id: 'departments', label: 'Departments', icon: 'building' });
   }
   groups.push({ label: 'Workspace', items: workspace });
 
-  // ─── HR & People (corporate admins) ───────────────────────────
-  if (can('view:employees') || can('edit:attendance')) {
+  // ─── HR & People (corporate admins, IT, managers) ──────────────
+  if (can('view:employees') || can('edit:attendance') || can('manage:beacons') || can('view:reports')) {
     const hrItems: NavItem[] = [];
     if (can('view:all_attendance') || can('view:team_attendance')) {
       hrItems.push({ id: 'team', label: 'Attendance', icon: 'user-check' });
@@ -46,7 +52,7 @@ export function navForRole(role: RoleKey): NavGroup[] {
       hrItems.push({ id: 'beacons', label: 'BLE Beacons', icon: 'bluetooth' });
     }
     if (can('view:reports')) {
-      hrItems.push({ id: 'reports', label: 'Reports', icon: 'bar-chart-3' });
+      hrItems.push({ id: 'reports', label: 'Reports', icon: 'chart-column' });
     }
     if (hrItems.length > 0) {
       groups.push({ label: 'HR & People', items: hrItems });
@@ -54,13 +60,23 @@ export function navForRole(role: RoleKey): NavGroup[] {
   }
 
   // ─── SafeChild (education + community) ────────────────────────
-  if (can('safechild:view_roster')) {
-    groups.push({
-      label: 'Sunday School',
-      items: [
-        { id: 'safechild', label: 'Class Check-in', icon: 'shield-check' },
-      ],
-    });
+  if (can('safechild:drop_off') || can('safechild:view_roster') || can('safechild:my_children')) {
+    const safeChildItems: NavItem[] = [];
+    if (can('safechild:drop_off') || can('safechild:manage_children')) {
+      safeChildItems.push({ id: 'safechild', label: 'Class Check-in', icon: 'shield-check' });
+    }
+    if (can('safechild:my_children')) {
+      safeChildItems.push({ id: 'safechild', label: 'My Children & Passes', icon: 'user-check' });
+    }
+    if (can('view:reports') || can('safechild:drop_off')) {
+      safeChildItems.push({ id: 'reports', label: 'Attendance Reports', icon: 'chart-column' });
+    }
+    if (safeChildItems.length > 0) {
+      groups.push({
+        label: 'Sunday School',
+        items: safeChildItems,
+      });
+    }
   }
 
   // ─── Administration (platform / IT) ───────────────────────────
@@ -74,9 +90,6 @@ export function navForRole(role: RoleKey): NavGroup[] {
     }
     if (can('view:audit_log')) {
       adminItems.push({ id: 'audit', label: 'Audit Log', icon: 'shield-alert' });
-    }
-    if (can('manage:organizations')) {
-      adminItems.push({ id: 'organizations', label: 'Organizations', icon: 'building-2' });
     }
     if (adminItems.length > 0) {
       groups.push({ label: 'Administration', items: adminItems });

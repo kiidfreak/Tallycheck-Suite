@@ -3,15 +3,15 @@ version: '3.8'
 services:
   db:
     image: postgres:15
-    container_name: omni_intranet_db
+    container_name: tcheck_intranet_db
     environment:
-      POSTGRES_USER: omni_user
-      POSTGRES_PASSWORD: omni_password
-      POSTGRES_DB: omni_intranet_test
+      POSTGRES_USER: tcheck_intranet_user
+      POSTGRES_PASSWORD: tcheck_intranet_pass26
+      POSTGRES_DB: tcheck_intranet
     ports:
-      - "5433:5432"
+      - "5434:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - tcheck_pgdata:/var/lib/postgresql/data
 
 volumes:
-  pgdata:
+  tcheck_pgdata:

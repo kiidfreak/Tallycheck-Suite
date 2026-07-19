@@ -10,23 +10,35 @@
     <table class="omni-table">
       <thead>
         <tr>
-          <th>Department</th>
+          <th>Department Name</th>
+          <th>Organization / Unit</th>
           <th>Parent Department</th>
           <th>Manager</th>
           <th>Employees</th>
-          @if (auth.role() === 'hr' || auth.role() === 'super_admin') {
+          @if (auth.can('edit:departments')) {
             <th style="text-align: right;"></th>
           }
         </tr>
       </thead>
       <tbody>
-        @for (dept of departments(); track dept.id) {
+        @for (dept of filtered_departments(); track dept.id) {
           <tr>
-            <td><strong>{{ dept.name }}</strong></td>
-            <td>{{ dept.parent_department_name || '—' }}</td>
+            <td>
+              <strong style="color: var(--fg-1); font-size: 14px;">
+                {{ format_name(dept.name) }}
+              </strong>
+            </td>
+            <td>
+              <omni-pill [tone]="get_org_name(dept.name) === 'FEM Church Karen' ? 'purple' : (get_org_name(dept.name) === 'Daystar University' ? 'info' : 'warning')">
+                {{ get_org_name(dept.name) }}
+              </omni-pill>
+            </td>
+            <td>{{ dept.parent_department_name ? format_name(dept.parent_department_name) : '—' }}</td>
             <td>{{ dept.manager_name || '—' }}</td>
-            <td>{{ dept.employee_count }}</td>
-            @if (auth.role() === 'hr' || auth.role() === 'super_admin') {
+            <td>
+              <strong style="color: var(--fg-brand);">{{ dept.employee_count }}</strong>
+            </td>
+            @if (auth.can('edit:departments')) {
               <td style="text-align: right;">
                 <omni-button variant="ghost" (click)="openDeptDrawer(dept)" title="Edit Department">
                   <omni-icon name="ellipsis" [size]="18"></omni-icon>
@@ -36,7 +48,7 @@
           </tr>
         } @empty {
           <tr>
-            <td [attr.colspan]="(auth.role() === 'hr' || auth.role() === 'super_admin') ? 5 : 4" class="empty-state">
+            <td [attr.colspan]="auth.can('edit:departments') ? 6 : 5" class="empty-state">
               <p>No departments found.</p>
             </td>
           </tr>

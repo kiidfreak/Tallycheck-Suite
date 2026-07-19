@@ -2,7 +2,7 @@ from typing import Tuple
 import uuid
 from flask import Blueprint, request, Response
 from models import db, BleBeacon, BeaconAssignment, Department
-from helpers.auth_helper import require_auth, roles_required
+from helpers.auth_helper import require_auth, roles_required, ADMIN_ROLES
 from py_errors import ValidationError, NotFoundError
 from py_success import SuccessResponse
 from schemas import BleBeaconSchema, BeaconAssignmentSchema
@@ -22,7 +22,7 @@ def get_beacons() -> Tuple[Response, int]:
     ).write_response()
 
 @beacon_bp.route('', methods=['POST'])
-@roles_required('hr', 'super_admin')
+@roles_required(*ADMIN_ROLES)
 def create_beacon() -> Tuple[Response, int]:
     """Create a new BLE beacon."""
     data = request.json or {}
@@ -36,12 +36,12 @@ def create_beacon() -> Tuple[Response, int]:
     is_active = data.get('is_active', True)
 
     if not mac_address:
-        raise ValidationError(message="MAC address is required")
+        raise ValidationError(details="MAC address is required")
 
     # Check unique MAC address
     existing = BleBeacon.query.filter_by(mac_address=mac_address).first()
     if existing:
-        raise ValidationError(message=f"Beacon with MAC address {mac_address} already exists")
+        raise ValidationError(details=f"Beacon with MAC address {mac_address} already exists")
 
     new_beacon = BleBeacon(
         name=name,
@@ -64,7 +64,7 @@ def create_beacon() -> Tuple[Response, int]:
     ).write_response()
 
 @beacon_bp.route('/<uuid:beacon_id>', methods=['PUT'])
-@roles_required('hr', 'super_admin')
+@roles_required(*ADMIN_ROLES)
 def update_beacon(beacon_id: uuid.UUID) -> Tuple[Response, int]:
     """Update an existing BLE beacon."""
     beacon = BleBeacon.query.get(beacon_id)
@@ -78,7 +78,7 @@ def update_beacon(beacon_id: uuid.UUID) -> Tuple[Response, int]:
         # Check uniqueness
         existing = BleBeacon.query.filter_by(mac_address=mac_address).first()
         if existing:
-            raise ValidationError(message=f"Beacon with MAC address {mac_address} already exists")
+            raise ValidationError(details=f"Beacon with MAC address {mac_address} already exists")
         beacon.mac_address = mac_address
 
     if 'name' in data:
@@ -105,7 +105,7 @@ def update_beacon(beacon_id: uuid.UUID) -> Tuple[Response, int]:
     ).write_response()
 
 @beacon_bp.route('/<uuid:beacon_id>', methods=['DELETE'])
-@roles_required('hr', 'super_admin')
+@roles_required(*ADMIN_ROLES)
 def delete_beacon(beacon_id: uuid.UUID) -> Tuple[Response, int]:
     """Delete a BLE beacon."""
     beacon = BleBeacon.query.get(beacon_id)
@@ -136,7 +136,7 @@ def get_assignments() -> Tuple[Response, int]:
     ).write_response()
 
 @beacon_bp.route('/assignments', methods=['POST'])
-@roles_required('hr', 'super_admin')
+@roles_required(*ADMIN_ROLES)
 def create_assignment() -> Tuple[Response, int]:
     """Assign a beacon to a department."""
     data = request.json or {}
@@ -144,13 +144,13 @@ def create_assignment() -> Tuple[Response, int]:
     department_id = data.get('department_id')
 
     if not beacon_id_str or not department_id:
-        raise ValidationError(message="beacon_id and department_id are required")
+        raise ValidationError(details="beacon_id and department_id are required")
 
     # Validate beacon exists
     try:
         beacon_id = uuid.UUID(beacon_id_str)
     except ValueError:
-        raise ValidationError(message="Invalid beacon_id format")
+        raise ValidationError(details="Invalid beacon_id format")
 
     beacon = BleBeacon.query.get(beacon_id)
     if not beacon:
@@ -164,7 +164,7 @@ def create_assignment() -> Tuple[Response, int]:
     # Check for existing assignment
     existing = BeaconAssignment.query.filter_by(beacon_id=beacon_id, department_id=department_id).first()
     if existing:
-        raise ValidationError(message="Beacon is already assigned to this department")
+        raise ValidationError(details="Beacon is already assigned to this department")
 
     assignment = BeaconAssignment(beacon_id=beacon_id, department_id=department_id)
     db.session.add(assignment)
@@ -177,7 +177,7 @@ def create_assignment() -> Tuple[Response, int]:
     ).write_response()
 
 @beacon_bp.route('/assignments/<uuid:assignment_id>', methods=['DELETE'])
-@roles_required('hr', 'super_admin')
+@roles_required(*ADMIN_ROLES)
 def delete_assignment(assignment_id: uuid.UUID) -> Tuple[Response, int]:
     """Remove a beacon-to-department assignment."""
     assignment = BeaconAssignment.query.get(assignment_id)

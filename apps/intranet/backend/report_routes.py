@@ -5,7 +5,7 @@ from typing import Any, Optional, Tuple
 from flask import Blueprint, request, Response
 from sqlalchemy import func
 from models import db, Employee, Department, AttendanceRecord
-from auth_routes import require_auth, roles_required
+from auth_routes import require_auth, roles_required, ADMIN_ROLES
 from py_errors import ValidationError, NotFoundError
 from schemas.reports import ReportSchema
 from py_success import SuccessResponse
@@ -18,7 +18,7 @@ report_bp: Blueprint = Blueprint('reports', __name__, url_prefix='/reports')
 
 @report_bp.route('/dashboard', methods=['GET'])
 @require_auth
-@roles_required('hr', 'super_admin')
+@roles_required(*ADMIN_ROLES)
 def get_dashboard() -> tuple[Response, int]:
     """HR Dashboard KPIs"""
     today: date = date.today()
@@ -73,7 +73,7 @@ def get_dashboard() -> tuple[Response, int]:
 
 @report_bp.route('/attendance/timeline', methods=['GET'])
 @require_auth
-@roles_required('hr', 'super_admin')
+@roles_required(*ADMIN_ROLES)
 def get_timeline() -> Tuple[Response, int]:
     """Returns today's timeline for all employees."""
     date_str: Optional[str] = request.args.get('date')
@@ -133,7 +133,7 @@ def get_timeline() -> Tuple[Response, int]:
 
 @report_bp.route('/attendance', methods=['GET'])
 @require_auth
-@roles_required('hr', 'super_admin')
+@roles_required(*ADMIN_ROLES)
 def get_attendance_report() -> Response | Tuple[Response, int]:
     """Detailed employee attendance report with CSV export"""
     # 1. Parse Arguments
@@ -232,9 +232,78 @@ def get_attendance_report() -> Response | Tuple[Response, int]:
     ).write_response()
 
 
+@report_bp.route('/attendance/trends', methods=['GET'])
+@require_auth
+@roles_required(*ADMIN_ROLES)
+def get_attendance_trends() -> Tuple[Response, int]:
+    """Returns daily total hours worked for the trend chart."""
+    date_from_str: Optional[str] = request.args.get('date_from')
+    date_to_str: Optional[str] = request.args.get('date_to')
+    
+    department_id_str: Optional[str] = request.args.get('department_id')
+    
+    today = date.today()
+    d_to = today
+    d_from = today - timedelta(days=7)
+    
+    if date_from_str:
+        try:
+            d_from = datetime.strptime(date_from_str, '%Y-%m-%d').date()
+        except ValueError:
+            pass
+    if date_to_str:
+        try:
+            d_to = datetime.strptime(date_to_str, '%Y-%m-%d').date()
+        except ValueError:
+            pass
+            
+    att_query = AttendanceRecord.query.filter(
+        AttendanceRecord.work_date >= d_from,
+        AttendanceRecord.work_date <= d_to
+    )
+    
+    if department_id_str:
+        try:
+            dept_id = int(department_id_str)
+            att_query = att_query.join(Employee, AttendanceRecord.employee_id == Employee.id)\
+                                 .filter(Employee.department_id == dept_id)
+        except ValueError:
+            pass
+            
+    records = att_query.all()
+    
+    # Group by work_date
+    daily_hours: dict[date, float] = {}
+    current = d_from
+    while current <= d_to:
+        daily_hours[current] = 0.0
+        current += timedelta(days=1)
+        
+    for r in records:
+        if r.clock_in and r.clock_out:
+            duration = r.clock_out - r.clock_in
+            hours = duration.total_seconds() / 3600.0
+            if r.work_date in daily_hours:
+                daily_hours[r.work_date] += hours
+            
+    data = [
+        {
+            "date": d.isoformat(),
+            "total_hours": round(hours, 2)
+        }
+        for d, hours in sorted(daily_hours.items())
+    ]
+    
+    return SuccessResponse(
+        message="Trends retrieved",
+        data=data,
+        status_code=200
+    ).write_response()
+
+
 @report_bp.route('/attendance/departments', methods=['GET'])
 @require_auth
-@roles_required('hr', 'super_admin')
+@roles_required(*ADMIN_ROLES)
 def get_department_report() -> Tuple[Response, int]:
     """Department level aggregations"""
     date_from_str: Optional[str] = request.args.get('date_from')
@@ -280,7 +349,7 @@ def get_department_report() -> Tuple[Response, int]:
 
 @report_bp.route('/attendance/departments/<int:id>', methods=['GET'])
 @require_auth
-@roles_required('hr', 'super_admin')
+@roles_required(*ADMIN_ROLES)
 def get_single_department_report(id: int) -> Tuple[Response, int]:
     date_from_str: Optional[str] = request.args.get('date_from')
     date_to_str: Optional[str] = request.args.get('date_to')

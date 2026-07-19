@@ -1,0 +1,339 @@
+<div class="reports-dashboard animate-fade-in">
+  <div class="dashboard-header">
+    <div class="title-container">
+      <h2>{{ is_safechild_reports() ? 'Sunday School Child Attendance & Ministry Analytics' : 'Overall Reports' }}</h2>
+      <p class="subtitle">{{ is_safechild_reports() ? 'FEM Church Karen — Children Ministry Attendance & Checkout Analytics' : 'Real-time KPI metrics and attendance overview' }}</p>
+    </div>
+  </div>
+
+  @if (is_safechild_reports()) {
+    <!-- Sunday School Child Attendance KPI Cards -->
+    <section class="kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
+      <div class="kpi-card card">
+        <div class="kpi-icon-wrapper blue">
+          <omni-icon name="users" [size]="20"></omni-icon>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-label">Total Enrolled Children</span>
+          <h3 class="kpi-value">{{ safechild_metrics().total_children }}</h3>
+        </div>
+      </div>
+
+      <div class="kpi-card card">
+        <div class="kpi-icon-wrapper green">
+          <omni-icon name="user-check" [size]="20"></omni-icon>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-label">Present in Room Today</span>
+          <h3 class="kpi-value">{{ safechild_metrics().checked_in_today }}</h3>
+        </div>
+      </div>
+
+      <div class="kpi-card card">
+        <div class="kpi-icon-wrapper teal">
+          <omni-icon name="shield-check" [size]="20"></omni-icon>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-label">Verified &amp; Released</span>
+          <h3 class="kpi-value">{{ safechild_metrics().picked_up_today }}</h3>
+        </div>
+      </div>
+
+      <div class="kpi-card card">
+        <div class="kpi-icon-wrapper purple">
+          <omni-icon name="activity" [size]="20"></omni-icon>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-label">Sunday Attendance Rate</span>
+          <h3 class="kpi-value">{{ safechild_metrics().attendance_rate }}</h3>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sunday School Class Breakdown Table -->
+    <div class="card" style="padding: 20px; margin-bottom: 24px;">
+      <h3 style="margin: 0 0 16px 0; font-size: 16px; color: var(--fg-1);">Sunday School Class Group Breakdown</h3>
+      <table class="omni-table">
+        <thead>
+          <tr>
+            <th>Class Group</th>
+            <th>Primary Location</th>
+            <th>Lead Teacher</th>
+            <th>Enrolled</th>
+            <th>Present Today</th>
+            <th>Released</th>
+            <th>Attendance %</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of safechild_class_reports(); track c.class_name) {
+            <tr>
+              <td><strong style="color: var(--fg-1);">{{ c.class_name }}</strong></td>
+              <td>{{ c.location }}</td>
+              <td>{{ c.teacher }}</td>
+              <td>{{ c.total }}</td>
+              <td><span style="color: var(--success); font-weight: 600;">{{ c.present }}</span></td>
+              <td><span style="color: var(--adept-navy-700); font-weight: 600;">{{ c.released }}</span></td>
+              <td>
+                <omni-pill tone="success">
+                  {{ Math.round((c.present / c.total) * 100) }}%
+                </omni-pill>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <!-- KPI Cards (Real-time Today) -->
+  <section class="kpi-grid" *ngIf="dashboard_metrics()">
+    <!-- Total Headcount -->
+    <div class="kpi-card card">
+      <div class="kpi-icon-wrapper blue">
+        <omni-icon name="users" [size]="20"></omni-icon>
+      </div>
+      <div class="kpi-content">
+        <span class="kpi-label">Total Headcount</span>
+        <h3 class="kpi-value">{{ dashboard_metrics()?.total_headcount || 0 }}</h3>
+      </div>
+    </div>
+
+    <!-- Attendance Rate -->
+    <div class="kpi-card card">
+      <div class="kpi-icon-wrapper green">
+        <omni-icon name="activity" [size]="20"></omni-icon>
+      </div>
+      <div class="kpi-content">
+        <span class="kpi-label">Attendance Rate</span>
+        <h3 class="kpi-value">{{ dashboard_metrics()?.attendance_rate_today || 0 | number:'1.1-2' }}%</h3>
+      </div>
+    </div>
+
+    <!-- Present / Absent Today -->
+    <div class="kpi-card card">
+      <div class="kpi-icon-wrapper teal">
+        <omni-icon name="user-check" [size]="20"></omni-icon>
+      </div>
+      <div class="kpi-content">
+        <span class="kpi-label">Present / Absent Today</span>
+        <h3 class="kpi-value">{{ dashboard_metrics()?.present_today || 0 }} / {{ dashboard_metrics()?.absent_today || 0 }}</h3>
+      </div>
+    </div>
+
+    <!-- Late Arrivals -->
+    <div class="kpi-card card">
+      <div class="kpi-icon-wrapper orange">
+        <omni-icon name="clock" [size]="20"></omni-icon>
+      </div>
+      <div class="kpi-content">
+        <span class="kpi-label">Late Arrivals</span>
+        <h3 class="kpi-value">{{ dashboard_metrics()?.late_arrivals || 0 }}</h3>
+      </div>
+    </div>
+
+    <!-- Pending Corrections -->
+    <div class="kpi-card card">
+      <div class="kpi-icon-wrapper purple">
+        <omni-icon name="file-warning" [size]="20"></omni-icon>
+      </div>
+      <div class="kpi-content">
+        <span class="kpi-label">Pending Corrections</span>
+        <h3 class="kpi-value">{{ dashboard_metrics()?.pending_corrections || 0 }}</h3>
+      </div>
+    </div>
+  </section>
+
+  <!-- Charts & Details Section -->
+  <div class="reports-main-grid">
+
+    <!-- Table -->
+    <div class="table-container card">
+      <div class="card-header"
+        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <div class="card-title-group">
+          <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: var(--text-primary);">Attendance Reports</h3>
+        </div>
+
+        <div class="card-actions" style="display: flex; gap: 12px; align-items: center;">
+          <div class="toggle-group"
+            style="display: flex; background: var(--bg-component); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 2px;">
+            <button title="List View"
+              style="padding: 6px; background: transparent; border: none; border-radius: var(--radius-sm); cursor: pointer; color: var(--text-secondary);"
+              [class.active]="currentLayout() === 'list'" (click)="currentLayout.set('list')">
+              <omni-icon name="list" [size]="16" [strokeWidth]="1.75"></omni-icon>
+            </button>
+            <button title="Chart View"
+              style="padding: 6px; background: transparent; border: none; border-radius: var(--radius-sm); cursor: pointer; color: var(--text-secondary);"
+              [class.active]="currentLayout() === 'chart'" (click)="currentLayout.set('chart')">
+              <omni-icon name="chart-column" [size]="16" [strokeWidth]="1.75"></omni-icon>
+            </button>
+          </div>
+
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <input type="date" id="dateFrom" [ngModel]="filter_date_from()"
+              (ngModelChange)="filter_date_from.set($event); apply_filters()" class="omni-input"
+              style="padding: 6px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-component); color: var(--text-primary); font-family: inherit;" />
+          </div>
+
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <input type="date" id="dateTo" [ngModel]="filter_date_to()"
+              (ngModelChange)="filter_date_to.set($event); apply_filters()" class="omni-input"
+              style="padding: 6px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-component); color: var(--text-primary); font-family: inherit;" />
+          </div>
+
+          <select id="department" class="department-select" [ngModel]="filter_department_id()"
+            (ngModelChange)="filter_department_id.set($event === 'null' ? null : +$event); apply_filters()">
+            <option [value]="null">All Departments</option>
+            <option *ngFor="let dept of departments()" [value]="dept.id">
+              {{ dept.name }}
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <ng-container *ngIf="is_loading_table() || is_loading_chart(); else content">
+        <ng-container *ngTemplateOutlet="loader"></ng-container>
+      </ng-container>
+
+      <ng-template #content>
+        <div class="table-wrapper" *ngIf="currentLayout() === 'list'">
+          <table class="omni-table" *ngIf="employee_attendance().length > 0">
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Department</th>
+                <th>Days Present</th>
+                <th>Days Absent</th>
+                <th>Late Days</th>
+                <th>Total Hours</th>
+                <th>Possible Hours</th>
+                <th>Attendance Rate</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let record of employee_attendance()">
+                <td>
+                  <div class="employee-cell" style="display: flex; align-items: center; gap: 12px;">
+                    <omni-avatar [initials]="get_initials(record.employee_name)" tone="success"></omni-avatar>
+                    <div class="employee-info" style="display: flex; flex-direction: column;">
+                      <span class="name" style="font-weight: 500; color: var(--text-primary);">{{ record.employee_name }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td>{{ record.department | formatLabel }}</td>
+                <td class="text-green-600 font-medium">{{ record.total_days_present }}</td>
+                <td class="text-red-600 font-medium">{{ record.total_days_absent }}</td>
+                <td class="text-orange-600 font-medium">{{ record.late_days }}</td>
+                <td>{{ record.total_hours_worked | number:'1.1-2' }}h</td>
+                <td>{{ get_possible_hours(record) | number:'1.1-2' }}h</td>
+                <td class="font-medium" [ngClass]="{
+                    'text-green-600': get_attendance_rate(record) >= 90,
+                    'text-orange-600': get_attendance_rate(record) >= 80 && get_attendance_rate(record) < 90,
+                    'text-red-600': get_attendance_rate(record) < 80
+                  }">
+                  {{ get_attendance_rate(record) | number:'1.1-1' }}%
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="empty-state" *ngIf="employee_attendance().length === 0">
+            <omni-icon name="file-search" [size]="48" color="#cbd5e1"></omni-icon>
+            <p>No attendance records found for the selected filters.</p>
+          </div>
+        </div>
+
+        <div class="dashboard-grid" *ngIf="currentLayout() === 'chart'">
+          <div class="chart-card trend-card">
+            <div class="trend-header">
+              <h3>Attendance Trends</h3>
+              <select class="form-select interval-select" [ngModel]="trend_interval()" (ngModelChange)="trend_interval.set($event)">
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+              </select>
+            </div>
+            <apx-chart
+              *ngIf="trend_chart_options.series"
+              [series]="$any(trend_chart_options).series"
+              [chart]="$any(trend_chart_options).chart"
+              [xaxis]="$any(trend_chart_options).xaxis"
+              [yaxis]="$any(trend_chart_options).yaxis"
+              [dataLabels]="$any(trend_chart_options).dataLabels"
+              [stroke]="$any(trend_chart_options).stroke"
+              [grid]="$any(trend_chart_options).grid"
+              [tooltip]="$any(trend_chart_options).tooltip"
+            ></apx-chart>
+          </div>
+          <div class="chart-card dept-card">
+            <h3>Attendance by Department</h3>
+            <apx-chart
+              *ngIf="department_chart_options.series"
+              [series]="$any(department_chart_options).series"
+              [chart]="$any(department_chart_options).chart"
+              [xaxis]="$any(department_chart_options).xaxis"
+              [yaxis]="$any(department_chart_options).yaxis"
+              [dataLabels]="$any(department_chart_options).dataLabels"
+              [plotOptions]="$any(department_chart_options).plotOptions"
+              [colors]="$any(department_chart_options).colors"
+              [grid]="$any(department_chart_options).grid"
+              [tooltip]="$any(department_chart_options).tooltip"
+            ></apx-chart>
+          </div>
+          <div class="chart-card top-dept-card">
+            <h3>Top 10 Departments by Hours</h3>
+            <apx-chart
+              *ngIf="top_dept_chart_options.series"
+              [series]="$any(top_dept_chart_options).series"
+              [chart]="$any(top_dept_chart_options).chart"
+              [xaxis]="$any(top_dept_chart_options).xaxis"
+              [yaxis]="$any(top_dept_chart_options).yaxis"
+              [dataLabels]="$any(top_dept_chart_options).dataLabels"
+              [plotOptions]="$any(top_dept_chart_options).plotOptions"
+              [colors]="$any(top_dept_chart_options).colors"
+              [grid]="$any(top_dept_chart_options).grid"
+              [tooltip]="$any(top_dept_chart_options).tooltip"
+            ></apx-chart>
+          </div>
+          <div class="chart-card person-card">
+            <h3>Top 10 Employees by Hours</h3>
+            <apx-chart
+              *ngIf="person_chart_options.series"
+              [series]="$any(person_chart_options).series"
+              [chart]="$any(person_chart_options).chart"
+              [xaxis]="$any(person_chart_options).xaxis"
+              [yaxis]="$any(person_chart_options).yaxis"
+              [dataLabels]="$any(person_chart_options).dataLabels"
+              [plotOptions]="$any(person_chart_options).plotOptions"
+              [colors]="$any(person_chart_options).colors"
+              [grid]="$any(person_chart_options).grid"
+              [tooltip]="$any(person_chart_options).tooltip"
+            ></apx-chart>
+          </div>
+          <div class="chart-card bubble-card">
+            <h3>Check-In & Check-Out Times</h3>
+            <apx-chart
+              *ngIf="bubble_chart_options.series"
+              [series]="$any(bubble_chart_options).series"
+              [chart]="$any(bubble_chart_options).chart"
+              [xaxis]="$any(bubble_chart_options).xaxis"
+              [yaxis]="$any(bubble_chart_options).yaxis"
+              [dataLabels]="$any(bubble_chart_options).dataLabels"
+              [colors]="$any(bubble_chart_options).colors"
+              [grid]="$any(bubble_chart_options).grid"
+              [tooltip]="$any(bubble_chart_options).tooltip"
+            ></apx-chart>
+          </div>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</div>
+
+<ng-template #loader>
+  <div class="loader-container">
+    <div class="spinner"></div>
+    <p>Loading data...</p>
+  </div>
+</ng-template>

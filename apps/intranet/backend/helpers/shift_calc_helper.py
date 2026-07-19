@@ -1,5 +1,10 @@
 from utils.shift_data import ShiftHours
 
+# Last-resort clock-in cutoff offset, in hours after shift start. Used only when
+# the org_settings row cannot be read at all. Kept in sync with
+# OrgSettings.DEFAULT_CUTOFF_HOURS_AFTER_START.
+DEFAULT_CUTOFF_HOURS_AFTER_START = 5
+
 @property  # type: ignore[misc]
 def shift_start_hour(self) -> int:
     """Returns the hour (0-23) when this employee's shift starts."""
@@ -24,10 +29,28 @@ def shift_end_hour(self) -> int:
 
 @property  # type: ignore[misc]
 def shift_cutoff_hour(self) -> int:
-    """Returns the clock-in cutoff hour: start + 5h (halfway through the 10h day).
-    Employees cannot clock in after this point; they must contact HR.
+    """Returns the clock-in cutoff hour. Employees cannot clock in after this
+    point; they must contact HR.
+
+    Resolution order, most specific first:
+      1. checkin_cutoff_hour — a manager-set override on this employee
+      2. shift start + OrgSettings.checkin_cutoff_hours_after_start (tenant default)
+      3. shift start + 5h — used only when the settings row cannot be read
+         (e.g. a tenant schema predating the org_settings table), so attendance
+         never breaks on a missing settings row.
     """
-    return self.shift_start_hour + 5
+    if self.checkin_cutoff_hour is not None:
+        return self.checkin_cutoff_hour
+
+    try:
+        # Imported lazily: models.py star-imports this module, so a top-level
+        # import here would be circular.
+        from models import OrgSettings
+        offset = OrgSettings.get().checkin_cutoff_hours_after_start
+    except Exception:
+        offset = DEFAULT_CUTOFF_HOURS_AFTER_START
+
+    return self.shift_start_hour + offset
 
 @property  # type: ignore[misc]
 def shift_duration_hours(self) -> float:

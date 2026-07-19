@@ -8,6 +8,46 @@ from py_auth import verify_jwt
 
 F = TypeVar('F', bound=Callable[..., Any])
 
+# ─── Role vocabulary ─────────────────────────────────────────────────
+# Canonical role set, mirroring RoleKey in libs/auth/src/roles.ts. Seeding
+# works from this list, so a role added here and there is available to every
+# tenant. Legacy names ('hr', 'manager', 'call_centre_*') are deliberately
+# absent: existing rows are never deleted, but new tenants stop inheriting
+# corporate-only roles that the frontend has no permission entry for.
+ALL_ROLES: tuple[str, ...] = (
+    'staff',
+    'company_admin',
+    'hr_admin',
+    'department_manager',
+    'school_admin',
+    'lecturer',
+    'teacher',
+    'guardian',
+    'super_admin',
+    'it_admin',
+)
+
+# ─── Role groups ─────────────────────────────────────────────────────
+# The backend's original role names ('hr', 'manager') predate the frontend
+# RoleKey set in libs/auth/src/roles.ts, which uses 'hr_admin',
+# 'department_manager', 'school_admin', etc. Education tenants seed the newer
+# names, corporate tenants may still hold the old ones, so both are listed
+# here and guards reference these groups instead of bare literals.
+#
+# This is a compatibility layer, not the end state: these checks should move to
+# permission-based gating that mirrors PERMISSION_MATRIX in libs/auth/src/roles.ts,
+# so adding a role never again requires touching every route decorator.
+ADMIN_ROLES: tuple[str, ...] = (
+    'super_admin',
+    'school_admin',
+    'company_admin',
+    'hr_admin',
+    'hr',
+)
+
+# Admins plus line managers / heads of department.
+MANAGER_ROLES: tuple[str, ...] = ADMIN_ROLES + ('department_manager', 'manager')
+
 def get_token_auth_header() -> str:
     """Obtains the Access Token from the Authorization Header"""
     auth: Optional[str] = request.headers.get("Authorization", None)

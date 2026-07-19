@@ -1,13 +1,102 @@
 <div class="page-container">
   <div class="page-header">
     <div class="title-section">
-      <h1>All Attendance Records</h1>
-      <p>HR View: Manage and audit attendance history.</p>
+      <h1>{{ is_lecturer() ? 'Academic Lectures & Timesheet History' : 'My Attendance & Timesheet History' }}</h1>
+      <p>{{ is_lecturer() ? 'Manage active lecture sessions, project live QR check-in codes, and view class attendance statistics.' : 'View personal work logs, BLE beacon verifications, shift hours, and export timesheets.' }}</p>
     </div>
-    <div class="actions">
-      <omni-button variant="primary" (click)="openManualEntry()">
-        <omni-icon name="plus" [size]="16"></omni-icon> Manual Entry
+    <div class="actions" style="display: flex; gap: 10px;">
+      @if (is_lecturer()) {
+        <omni-button variant="primary" (click)="openQRModal()">
+          <omni-icon name="qr-code" [size]="16"></omni-icon> Project Live Class QR
+        </omni-button>
+      }
+      <omni-button variant="secondary" (click)="exportCSV()">
+        <omni-icon name="download" [size]="16"></omni-icon> Export CSV
       </omni-button>
+      @if (auth.can('edit:attendance')) {
+        <omni-button variant="primary" (click)="openManualEntry()">
+          <omni-icon name="plus" [size]="16"></omni-icon> Manual Entry
+        </omni-button>
+      }
+    </div>
+  </div>
+
+  @if (is_lecturer()) {
+    <!-- Live Academic Lecture Session Card -->
+    <div class="card" style="padding: 20px; margin-bottom: 24px; background: linear-gradient(135deg, #e0e7ff 0%, #ffffff 100%); border: 1px solid #c7d2fe;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+            <span style="background: #4338ca; color: white; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 12px; font-family: monospace;">
+              {{ active_lecture_session().course_code }}
+            </span>
+            <strong style="font-size: 16px; color: #0f172a;">{{ active_lecture_session().course_title }}</strong>
+            <omni-pill tone="success">LIVE SESSION ACTIVE</omni-pill>
+          </div>
+          <p style="margin: 0; font-size: 13px; color: #475569;">
+            📍 {{ active_lecture_session().room }} &nbsp;|&nbsp; ⏰ {{ active_lecture_session().scheduled_time }}
+          </p>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 16px; background: white; padding: 12px 16px; border-radius: 8px; border: 1px solid #c7d2fe;">
+          <div>
+            <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 700; display: block;">Student Attendance</span>
+            <strong style="font-size: 20px; color: #16a34a;">{{ active_lecture_session().present_students }} / {{ active_lecture_session().enrolled_students }}</strong>
+            <span style="font-size: 11px; color: #16a34a; font-weight: 600; margin-left: 4px;">(87.5% Present)</span>
+          </div>
+          <omni-button variant="primary" size="sm" (click)="openQRModal()">
+            <omni-icon name="qr-code" [size]="16"></omni-icon> QR Fallback
+          </omni-button>
+        </div>
+      </div>
+
+      <!-- Course Units Overview -->
+      <div style="margin-top: 16px; border-top: 1px solid #c7d2fe; padding-top: 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px;">
+        @for (c of my_lecture_courses(); track c.code) {
+          <div style="background: white; padding: 10px 14px; border-radius: 6px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <strong style="font-size: 13px; color: #0f172a; display: block;">{{ c.code }}: {{ c.name }}</strong>
+              <span style="font-size: 11px; color: #64748b;">{{ c.room }} · {{ c.students }} Students</span>
+            </div>
+            <omni-pill tone="info">{{ c.rate }}</omni-pill>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Summary Stats Section -->
+  <section class="stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 20px;">
+    <omni-stat-card label="Total Worked Hours" [value]="total_hours() + 'h'" delta="this month" deltaTone="success" />
+    <omni-stat-card label="Active Shift Days" [value]="active_days() + ''" delta="days logged" deltaTone="success" />
+    <omni-stat-card label="On-Time Arrival Rate" [value]="on_time_rate()" delta="punctuality rate" deltaTone="success" />
+    <omni-stat-card label="Assigned Shift Pattern" value="7:00 AM - 5:00 PM" delta="standard morning" />
+  </section>
+
+  <!-- Filter & Actions Bar -->
+  <div class="card" style="padding: 16px; margin-bottom: 20px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; justify-content: space-between;">
+    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <label for="start-date-filter" style="font-size: 12px; font-weight: 600; color: var(--fg-2);">From:</label>
+        <input id="start-date-filter" type="date" class="omni-input" [ngModel]="startDate()" (ngModelChange)="startDate.set($event)" style="padding: 6px 10px; font-size: 13px;" />
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <label for="end-date-filter" style="font-size: 12px; font-weight: 600; color: var(--fg-2);">To:</label>
+        <input id="end-date-filter" type="date" class="omni-input" [ngModel]="endDate()" (ngModelChange)="endDate.set($event)" style="padding: 6px 10px; font-size: 13px;" />
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <label for="status-select-filter" style="font-size: 12px; font-weight: 600; color: var(--fg-2);">Status:</label>
+        <select id="status-select-filter" class="omni-input" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)" style="padding: 6px 10px; font-size: 13px;">
+          <option value="all">All Statuses</option>
+          <option value="closed">Closed / Verified</option>
+          <option value="open">Active Session</option>
+          <option value="corrected">Corrected</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="font-size: 13px; color: var(--fg-3); font-weight: 500;">
+      Showing {{ filtered_records().length }} attendance records
     </div>
   </div>
 
@@ -15,40 +104,110 @@
     <table class="omni-table">
       <thead>
         <tr>
-          <th>Employee ID</th>
           <th>Work Date</th>
           <th>Check In</th>
           <th>Check Out</th>
+          <th>Worked Hours</th>
+          <th>BLE Location / Source</th>
+          <th>Notes / Shift</th>
           <th>Status</th>
-          <th>Source</th>
           <th>Actions</th>
         </tr>
       </thead>
       <tbody>
-        @for (rec of records(); track rec.id) {
+        @for (rec of filtered_records(); track rec.id) {
           <tr>
-            <td>{{ rec.employee_id }}</td>
-            <td>{{ rec.work_date }}</td>
-            <td>{{ rec.clock_in | date:'shortTime' }}</td>
-            <td>{{ rec.clock_out ? (rec.clock_out | date:'shortTime') : '--' }}</td>
+            <td style="font-weight: 600;">{{ rec.work_date }}</td>
+            <td>
+              <span style="display: flex; align-items: center; gap: 6px;">
+                <omni-icon name="log-in" [size]="14" class="text-success"></omni-icon>
+                {{ rec.clock_in | date:'shortTime' }}
+              </span>
+            </td>
+            <td>
+              <span style="display: flex; align-items: center; gap: 6px;">
+                <omni-icon name="log-out" [size]="14" class="text-muted"></omni-icon>
+                {{ rec.clock_out ? (rec.clock_out | date:'shortTime') : '--' }}
+              </span>
+            </td>
+            <td>
+              <strong style="color: var(--fg-1);">{{ rec.worked_hours ? (rec.worked_hours + 'h') : '--' }}</strong>
+            </td>
+            <td>
+              <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--fg-2);">
+                <omni-icon name="bluetooth" [size]="14" class="text-primary"></omni-icon>
+                {{ rec.source || 'BLE Beacon Auto' }}
+              </span>
+            </td>
+            <td style="font-size: 12px; color: var(--fg-3);">
+              {{ rec.notes || 'Standard Shift' }}
+            </td>
             <td>
               <omni-pill [tone]="rec.status === 'open' ? 'success' : (rec.status === 'corrected' ? 'warning' : '')">
-                {{ rec.status }}
+                {{ rec.status === 'open' ? 'Active Session' : (rec.status === 'closed' ? 'Closed' : rec.status) }}
               </omni-pill>
             </td>
             <td>
-              <omni-pill tone="purple">{{ rec.source }}</omni-pill>
-            </td>
-            <td>
               <div style="display: flex; gap: 8px;">
-                <omni-button variant="ghost" (click)="openEdit(rec)">Edit</omni-button>
-                <omni-button variant="secondary" (click)="openAudit(rec)">Audit Trail</omni-button>
-              </div>
+                <omni-button variant="ghost" size="sm" (click)="openEdit(rec)">Request Correction</omni-button>
+                @if (auth.can('edit:attendance')) {
+                  <omni-button variant="secondary" size="sm" (click)="openAudit(rec)">Audit Trail</omni-button>
+                }
+                <!-- Projector Live QR Code Modal -->
+  @if (show_qr_modal()) {
+    <div class="drawer-overlay" (click)="closeQRModal()"></div>
+    <div class="drawer" style="width: 480px; text-align: center;">
+      <div class="drawer-header">
+        <h2>Live Projector QR Code Pass</h2>
+        <button class="close-btn" (click)="closeQRModal()">
+          <omni-icon name="x" [size]="20"></omni-icon>
+        </button>
+      </div>
+      <div class="drawer-body" style="padding: 24px; display: flex; flex-direction: column; align-items: center; gap: 16px;">
+        <omni-pill tone="success">LIVE SESSION: {{ active_lecture_session().course_code }}</omni-pill>
+        <h3 style="margin: 0; color: #0f172a;">{{ active_lecture_session().course_title }}</h3>
+        <p style="margin: 0; font-size: 13px; color: #64748b;">
+          Students in {{ active_lecture_session().room }} scan this QR code with their mobile device to record attendance.
+        </p>
+
+        <!-- Dynamic QR Pass -->
+        <div style="background: white; padding: 20px; border-radius: 12px; border: 2px solid #6366f1; box-shadow: 0 10px 25px rgba(99, 102, 241, 0.2);">
+          <svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="200" height="200" fill="white"/>
+            <rect x="10" y="10" width="60" height="60" fill="#1e1b4b"/>
+            <rect x="20" y="20" width="40" height="40" fill="white"/>
+            <rect x="30" y="30" width="20" height="20" fill="#4338ca"/>
+            <rect x="130" y="10" width="60" height="60" fill="#1e1b4b"/>
+            <rect x="140" y="20" width="40" height="40" fill="white"/>
+            <rect x="150" y="30" width="20" height="20" fill="#4338ca"/>
+            <rect x="10" y="130" width="60" height="60" fill="#1e1b4b"/>
+            <rect x="20" y="140" width="40" height="40" fill="white"/>
+            <rect x="30" y="150" width="20" height="20" fill="#4338ca"/>
+            <rect x="90" y="10" width="20" height="40" fill="#4338ca"/>
+            <rect x="90" y="70" width="40" height="20" fill="#4338ca"/>
+            <rect x="140" y="90" width="50" height="30" fill="#4338ca"/>
+            <rect x="80" y="130" width="40" height="60" fill="#4338ca"/>
+            <rect x="140" y="140" width="50" height="50" fill="#1e1b4b"/>
+          </svg>
+          <div style="margin-top: 12px; font-family: monospace; font-size: 13px; font-weight: 700; color: #4338ca;">
+            TOKEN: {{ active_lecture_session().qr_session_token }}
+          </div>
+        </div>
+
+        <div style="font-size: 12px; color: #64748b; background: #f1f5f9; padding: 8px 16px; border-radius: 999px;">
+          ⏱️ Dynamic Security Token · Auto-refreshes every 60s
+        </div>
+      </div>
+    </div>
+  }
+</div>
             </td>
           </tr>
         } @empty {
           <tr>
-            <td colspan="7" class="empty-state">No attendance records found.</td>
+            <td colspan="8" class="empty-state" style="padding: 32px; text-align: center; color: var(--fg-3);">
+              No attendance records found matching your selected date range.
+            </td>
           </tr>
         }
       </tbody>

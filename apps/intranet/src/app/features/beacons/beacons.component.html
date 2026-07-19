@@ -4,11 +4,11 @@
       <h1>BLE Beacons</h1>
       <p>Configure hardware beacons for office location verification.</p>
     </div>
-    @if (auth.role() === 'hr' || auth.role() === 'super_admin') {
-      <omni-button variant="primary" (click)="openBeaconDrawer()">
-        <omni-icon name="plus" [size]="16"></omni-icon>
-        Add Beacon
-      </omni-button>
+    @if (auth.can('manage:beacons')) {
+    <omni-button variant="primary" (click)="openBeaconDrawer()">
+      <omni-icon name="plus" [size]="16"></omni-icon>
+      Add Beacon
+    </omni-button>
     }
   </div>
 
@@ -22,64 +22,64 @@
           <th>Major/Minor</th>
           <th>Status</th>
           <th>Assigned Departments</th>
-          @if (auth.role() === 'hr' || auth.role() === 'super_admin') {
-            <th style="text-align: right;">Actions</th>
+          @if (auth.can('manage:beacons')) {
+          <th style="text-align: right;">Actions</th>
           }
         </tr>
       </thead>
       <tbody>
         @for (beacon of beacons(); track beacon.id) {
-          <tr>
-            <td>
-              <strong>{{ beacon.name || 'Unnamed Beacon' }}</strong>
-              <div class="hint">{{ beacon.description || 'No description' }}</div>
-            </td>
-            <td><code>{{ beacon.mac_address }}</code></td>
-            <td>{{ beacon.location || '—' }}</td>
-            <td><code>{{ beacon.major }}/{{ beacon.minor }}</code></td>
-            <td>
-              <span class="badge" [ngClass]="beacon.is_active ? 'badge-success' : 'badge-danger'">
-                {{ beacon.is_active ? 'Active' : 'Inactive' }}
-              </span>
-            </td>
-            <td>
-              <div class="assignments-list">
-                @for (assign of getBeaconAssignments(beacon.id || ''); track assign.id) {
-                  <span class="assignment-pill">
-                    {{ assign.department_name }}
-                    @if (auth.role() === 'hr' || auth.role() === 'super_admin') {
-                      <button class="remove-assign" (click)="removeAssignment(assign.id || '')" title="Unassign">
-                        <omni-icon name="x" [size]="12"></omni-icon>
-                      </button>
-                    }
-                  </span>
-                } @empty {
-                  <span class="hint">Unassigned</span>
+        <tr>
+          <td>
+            <strong>{{ beacon.name || 'Unnamed Beacon' }}</strong>
+            <div class="hint">{{ beacon.description || 'No description' }}</div>
+          </td>
+          <td><code>{{ beacon.mac_address }}</code></td>
+          <td>{{ beacon.location || '—' }}</td>
+          <td><code>{{ beacon.major }}/{{ beacon.minor }}</code></td>
+          <td>
+            <span class="badge" [ngClass]="beacon.is_active ? 'badge-success' : 'badge-danger'">
+              {{ beacon.is_active ? 'Active' : 'Inactive' }}
+            </span>
+          </td>
+          <td>
+            <div class="assignments-list">
+              @for (assign of getBeaconAssignments(beacon.id || ''); track assign.id) {
+              <span class="assignment-pill">
+                {{ assign.department_name }}
+                @if (auth.can('manage:beacons')) {
+                <button class="remove-assign" (click)="removeAssignment(assign.id || '')" title="Unassign">
+                  <omni-icon name="x" [size]="12"></omni-icon>
+                </button>
                 }
-              </div>
-            </td>
-            @if (auth.role() === 'hr' || auth.role() === 'super_admin') {
-              <td style="text-align: right;">
-                <div class="action-buttons">
-                  <omni-button variant="ghost" (click)="openAssignDialog(beacon)" title="Assign Department">
-                    <omni-icon name="link" [size]="16"></omni-icon>
-                  </omni-button>
-                  <omni-button variant="ghost" (click)="openBeaconDrawer(beacon)" title="Edit">
-                    <omni-icon name="pencil" [size]="16"></omni-icon>
-                  </omni-button>
-                  <omni-button variant="ghost" (click)="deleteBeacon(beacon.id || '')" title="Delete">
-                    <omni-icon name="trash" [size]="16" class="text-danger"></omni-icon>
-                  </omni-button>
-                </div>
-              </td>
-            }
-          </tr>
+              </span>
+              } @empty {
+              <span class="hint">Unassigned</span>
+              }
+            </div>
+          </td>
+          @if (auth.can('manage:beacons')) {
+          <td style="text-align: right;">
+            <div class="action-buttons">
+              <omni-button variant="ghost" (click)="openAssignDialog(beacon)" title="Assign Department">
+                <omni-icon name="link" [size]="16"></omni-icon>
+              </omni-button>
+              <omni-button variant="ghost" (click)="openBeaconDrawer(beacon)" title="Edit">
+                <omni-icon name="pencil" [size]="16"></omni-icon>
+              </omni-button>
+              <omni-button variant="ghost" (click)="deleteBeacon(beacon.id || '')" title="Delete">
+                <omni-icon name="trash" [size]="16" class="text-danger"></omni-icon>
+              </omni-button>
+            </div>
+          </td>
+          }
+        </tr>
         } @empty {
-          <tr>
-            <td [attr.colspan]="(auth.role() === 'hr' || auth.role() === 'super_admin') ? 7 : 6" class="empty-state">
-              <p>No beacons found.</p>
-            </td>
-          </tr>
+        <tr>
+          <td [attr.colspan]="auth.can('manage:beacons') ? 7 : 6" class="empty-state">
+            <p>No beacons found.</p>
+          </td>
+        </tr>
         }
       </tbody>
     </table>
@@ -87,85 +87,95 @@
 
   <!-- Drawer for Add/Edit Beacon -->
   @if (isBeaconDrawerOpen()) {
-    <div class="drawer-overlay" role="button" tabindex="0" (click)="closeBeaconDrawer()" (keydown.enter)="closeBeaconDrawer()" (keydown.space)="closeBeaconDrawer()"></div>
-    <div class="drawer">
-      <div class="drawer-header">
-        <h2>{{ editingBeacon() ? 'Edit' : 'Add' }} BLE Beacon</h2>
-        <button class="close-btn" (click)="closeBeaconDrawer()">
-          <omni-icon name="x" [size]="20"></omni-icon>
-        </button>
+  <div class="drawer-overlay" role="button" tabindex="0" (click)="closeBeaconDrawer()"
+    (keydown.enter)="closeBeaconDrawer()" (keydown.space)="closeBeaconDrawer()"></div>
+  <div class="drawer">
+    <div class="drawer-header">
+      <h2>{{ editingBeacon() ? 'Edit' : 'Add' }} BLE Beacon</h2>
+      <button class="close-btn" (click)="closeBeaconDrawer()">
+        <omni-icon name="x" [size]="20"></omni-icon>
+      </button>
+    </div>
+    <div class="drawer-body">
+      <div class="form-group">
+        <label for="b-name">Friendly Name</label>
+        <input id="b-name" type="text" [ngModel]="formName()" (ngModelChange)="formName.set($event)" class="omni-input"
+          placeholder="e.g. Lobby Entrance Beacon" />
       </div>
-      <div class="drawer-body">
-        <div class="form-group">
-          <label for="b-name">Friendly Name</label>
-          <input id="b-name" type="text" [ngModel]="formName()" (ngModelChange)="formName.set($event)" class="omni-input" placeholder="e.g. Lobby Entrance Beacon" />
+      <div class="form-group">
+        <label for="b-mac">MAC Address (Required)</label>
+        <input id="b-mac" type="text" [ngModel]="formMac()" (ngModelChange)="formMac.set($event)" class="omni-input"
+          placeholder="e.g. AA:BB:CC:DD:EE:FF" />
+      </div>
+      <div class="form-group">
+        <label for="b-uuid">UUID (Optional)</label>
+        <input id="b-uuid" type="text" [ngModel]="formUuid()" (ngModelChange)="formUuid.set($event)" class="omni-input"
+          placeholder="e.g. 2d7a9f... (auto-generated if empty)" />
+      </div>
+      <div class="form-row">
+        <div class="form-group half">
+          <label for="b-major">Major</label>
+          <input id="b-major" type="number" [ngModel]="formMajor()" (ngModelChange)="formMajor.set(+$event)"
+            class="omni-input" />
         </div>
-        <div class="form-group">
-          <label for="b-mac">MAC Address (Required)</label>
-          <input id="b-mac" type="text" [ngModel]="formMac()" (ngModelChange)="formMac.set($event)" class="omni-input" placeholder="e.g. AA:BB:CC:DD:EE:FF" />
-        </div>
-        <div class="form-group">
-          <label for="b-uuid">UUID (Optional)</label>
-          <input id="b-uuid" type="text" [ngModel]="formUuid()" (ngModelChange)="formUuid.set($event)" class="omni-input" placeholder="e.g. 2d7a9f... (auto-generated if empty)" />
-        </div>
-        <div class="form-row">
-          <div class="form-group half">
-            <label for="b-major">Major</label>
-            <input id="b-major" type="number" [ngModel]="formMajor()" (ngModelChange)="formMajor.set(+$event)" class="omni-input" />
-          </div>
-          <div class="form-group half">
-            <label for="b-minor">Minor</label>
-            <input id="b-minor" type="number" [ngModel]="formMinor()" (ngModelChange)="formMinor.set(+$event)" class="omni-input" />
-          </div>
-        </div>
-        <div class="form-group">
-          <label for="b-loc">Physical Location</label>
-          <input id="b-loc" type="text" [ngModel]="formLocation()" (ngModelChange)="formLocation.set($event)" class="omni-input" placeholder="e.g. 4th Floor Meeting Room A" />
-        </div>
-        <div class="form-group">
-          <label for="b-desc">Description</label>
-          <textarea id="b-desc" [ngModel]="formDescription()" (ngModelChange)="formDescription.set($event)" class="omni-input text-area" placeholder="Provide extra placement info..."></textarea>
-        </div>
-        <div class="form-group checkbox-group">
-          <label class="checkbox-label">
-            <input type="checkbox" [ngModel]="formIsActive()" (ngModelChange)="formIsActive.set($event)" />
-            Beacon is Active
-          </label>
+        <div class="form-group half">
+          <label for="b-minor">Minor</label>
+          <input id="b-minor" type="number" [ngModel]="formMinor()" (ngModelChange)="formMinor.set(+$event)"
+            class="omni-input" />
         </div>
       </div>
-      <div class="drawer-footer">
-        <omni-button variant="ghost" (click)="closeBeaconDrawer()">Cancel</omni-button>
-        <omni-button variant="primary" (click)="saveBeacon()">Save</omni-button>
+      <div class="form-group">
+        <label for="b-loc">Physical Location</label>
+        <input id="b-loc" type="text" [ngModel]="formLocation()" (ngModelChange)="formLocation.set($event)"
+          class="omni-input" placeholder="e.g. 4th Floor Meeting Room A" />
+      </div>
+      <div class="form-group">
+        <label for="b-desc">Description</label>
+        <textarea id="b-desc" [ngModel]="formDescription()" (ngModelChange)="formDescription.set($event)"
+          class="omni-input text-area" placeholder="Provide extra placement info..."></textarea>
+      </div>
+      <div class="form-group checkbox-group">
+        <label class="checkbox-label">
+          <input type="checkbox" [ngModel]="formIsActive()" (ngModelChange)="formIsActive.set($event)" />
+          Beacon is Active
+        </label>
       </div>
     </div>
+    <div class="drawer-footer">
+      <omni-button variant="ghost" (click)="closeBeaconDrawer()">Cancel</omni-button>
+      <omni-button variant="primary" (click)="saveBeacon()">Save</omni-button>
+    </div>
+  </div>
   }
 
   <!-- Dialog Modal for Assignment -->
   @if (isAssignDialogOpen()) {
-    <div class="dialog-overlay" role="button" tabindex="0" (click)="closeAssignDialog()" (keydown.enter)="closeAssignDialog()" (keydown.space)="closeAssignDialog()"></div>
-    <div class="dialog-card card">
-      <div class="dialog-header">
-        <h3>Assign Beacon to Department</h3>
-        <button class="close-btn" (click)="closeAssignDialog()">
-          <omni-icon name="x" [size]="18"></omni-icon>
-        </button>
-      </div>
-      <div class="dialog-body">
-        <p>Select the department that will use <strong>{{ activeBeaconForAssignment()?.name || activeBeaconForAssignment()?.mac_address }}</strong> for location check-ins.</p>
-        <div class="form-group">
-          <label for="b-dept">Department</label>
-          <select id="b-dept" [ngModel]="formDeptId()" (ngModelChange)="formDeptId.set(+$event)" class="omni-input">
-            <option [ngValue]="null" disabled selected>Choose a department...</option>
-            @for (dept of departments(); track dept.id) {
-              <option [value]="dept.id">{{ dept.name }}</option>
-            }
-          </select>
-        </div>
-      </div>
-      <div class="dialog-footer">
-        <omni-button variant="ghost" (click)="closeAssignDialog()">Cancel</omni-button>
-        <omni-button variant="primary" (click)="submitAssignment()">Assign</omni-button>
+  <div class="dialog-overlay" role="button" tabindex="0" (click)="closeAssignDialog()"
+    (keydown.enter)="closeAssignDialog()" (keydown.space)="closeAssignDialog()"></div>
+  <div class="dialog-card card">
+    <div class="dialog-header">
+      <h3>Assign Beacon to Department</h3>
+      <button class="close-btn" (click)="closeAssignDialog()">
+        <omni-icon name="x" [size]="18"></omni-icon>
+      </button>
+    </div>
+    <div class="dialog-body">
+      <p>Select the department that will use <strong>{{ activeBeaconForAssignment()?.name ||
+          activeBeaconForAssignment()?.mac_address }}</strong> for location check-ins.</p>
+      <div class="form-group">
+        <label for="b-dept">Department</label>
+        <select id="b-dept" [ngModel]="formDeptId()" (ngModelChange)="formDeptId.set(+$event)" class="omni-input">
+          <option [ngValue]="null" disabled selected>Choose a department...</option>
+          @for (dept of departments(); track dept.id) {
+          <option [value]="dept.id">{{ dept.name }}</option>
+          }
+        </select>
       </div>
     </div>
+    <div class="dialog-footer">
+      <omni-button variant="ghost" (click)="closeAssignDialog()">Cancel</omni-button>
+      <omni-button variant="primary" (click)="submitAssignment()">Assign</omni-button>
+    </div>
+  </div>
   }
 </div>

@@ -17,7 +17,7 @@ def mock_verify_jwt():
 def hr_employee(app):
     """Creates a seeded approved HR employee for tests."""
     with app.app_context():
-        role = Role.query.filter_by(name='hr').first()
+        role = Role.query.filter_by(name='hr_admin').first()
         dept = Department.query.filter_by(name='hr').first()
         
         emp = Employee(

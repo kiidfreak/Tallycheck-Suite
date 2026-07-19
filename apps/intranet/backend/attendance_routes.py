@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from typing import Any, Optional
 from flask import Blueprint, jsonify, request, Response
 from models import AttendanceRecord, Employee, AuditLog, db
-from auth_routes import require_auth, roles_required
+from auth_routes import require_auth, roles_required, ADMIN_ROLES, MANAGER_ROLES
 from py_errors import (
     EmployeeNotFoundError,
     ForbiddenError,
@@ -213,7 +213,7 @@ def get_stats() -> tuple[Response, int]:
 # ==========================================================
 
 @attendance_bp.get("")
-@roles_required('hr', 'super_admin', 'manager')
+@roles_required(*MANAGER_ROLES)
 def query_attendance():
     """Query attendance records for HR and Managers (with department lock for managers)"""
     page: int = request.args.get("page", 1, type=int)
@@ -278,7 +278,7 @@ def query_attendance():
 
 
 @attendance_bp.post("")
-@roles_required('hr', 'super_admin')
+@roles_required(*ADMIN_ROLES)
 def create_attendance():
     """Manually create an attendance record (HR only)."""
     data: dict[str, Any] = request.get_json(silent=True) or {}
@@ -344,7 +344,7 @@ def create_attendance():
     ).write_response()
 
 @attendance_bp.put("/<int:id>")
-@roles_required('hr', 'super_admin')
+@roles_required(*ADMIN_ROLES)
 def update_attendance(id: int):
     """Edit an existing attendance record (HR only)."""
     record = AttendanceRecord.query.filter_by(id=id).first()
@@ -403,7 +403,7 @@ def update_attendance(id: int):
     ).write_response()
 
 @attendance_bp.get("/<int:id>/audit")
-@roles_required('hr', 'super_admin')
+@roles_required(*ADMIN_ROLES)
 def get_audit_trail(record_id: str):
     """Return the audit trail for a specific attendance record."""
     record = AttendanceRecord.query.filter_by(id=record_id).first()

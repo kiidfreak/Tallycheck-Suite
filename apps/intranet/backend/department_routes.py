@@ -1,7 +1,7 @@
 from typing import Any, Optional, Tuple
 from flask import Blueprint, request, Response
 from models import db, Department, Employee
-from auth_routes import require_auth, roles_required
+from auth_routes import require_auth, roles_required, ADMIN_ROLES
 from py_errors import NotFoundError, DepartmentHasEmployeesError, ValidationError
 from py_success import SuccessResponse
 from schemas.departments import DepartmentSchema
@@ -20,7 +20,7 @@ def list_departments() -> Tuple[Response, int]:
 
 @department_bp.route('', methods=['POST'])
 @require_auth
-@roles_required('hr', 'super_admin')
+@roles_required(*ADMIN_ROLES)
 def create_department() -> Tuple[Response, int]:
     body: Optional[dict[str, Any]] = request.get_json()
     if not body or 'name' not in body or not str(body['name']).strip():
@@ -60,7 +60,7 @@ def create_department() -> Tuple[Response, int]:
 
 @department_bp.route('/<int:id>', methods=['PUT'])
 @require_auth
-@roles_required('hr', 'super_admin')
+@roles_required(*ADMIN_ROLES)
 def update_department(id: int) -> Tuple[Response, int]:
     dept = Department.query.get(id)
     if not dept:
@@ -120,7 +120,7 @@ def update_department(id: int) -> Tuple[Response, int]:
 
 @department_bp.route('/<int:id>', methods=['DELETE'])
 @require_auth
-@roles_required('hr', 'super_admin')
+@roles_required(*ADMIN_ROLES)
 def delete_department(id: int) -> Tuple[Response, int]:
     dept = Department.query.get(id)
     if not dept:
