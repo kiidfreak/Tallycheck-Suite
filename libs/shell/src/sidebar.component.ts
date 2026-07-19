@@ -14,7 +14,12 @@ import { COMM_SUBITEMS, NavItem, navForRole } from './nav';
   template: `
     <aside class="sidebar">
       <div class="sidebar-brand">
-        <span class="brand-dots"><i></i><i></i><i></i></span>
+        <svg class="brand-logo" width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="100" height="100" rx="18" fill="#3B82F6"/>
+          <path d="M25 22H75V34H56V78H44V34H25V22Z" fill="white"/>
+          <circle cx="68" cy="68" r="18" fill="white" stroke="#3B82F6" stroke-width="4"/>
+          <path d="M58 68L65 75L79 59" stroke="#3B82F6" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
         <span class="brand-wordmark">TallyCheck</span>
       </div>
 

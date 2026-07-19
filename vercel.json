@@ -1,1 +1,5 @@
-{ "rewrites": [{ "source": "/(.*)", "destination": "/" }] }
+{
+  "buildCommand": "npx nx build intranet --configuration=production",
+  "outputDirectory": "dist/apps/intranet/browser",
+  "rewrites": [{ "source": "/(.*)", "destination": "/" }]
+}
