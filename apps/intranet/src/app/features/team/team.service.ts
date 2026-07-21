@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { Envelope, unwrap } from '@omni/api-client';
 import { environment } from '../../../environments/environment';
 import { DashboardStats, TimelineResponse } from '../../interfaces/team.interface';
 import { PendingUser } from '../../interfaces/users.interface';
@@ -10,7 +11,9 @@ export class TeamService {
   private readonly http = inject(HttpClient);
 
   get_dashboard_stats(): Observable<DashboardStats> {
-    return this.http.get<DashboardStats>(`${environment.apiUrl}/reports/dashboard`);
+    return this.http
+      .get<Envelope<DashboardStats>>(`${environment.apiUrl}/reports/dashboard`)
+      .pipe(unwrap());
   }
 
   get_timeline(date?: string): Observable<TimelineResponse> {
@@ -18,11 +21,16 @@ export class TeamService {
     if (date) {
       params['date'] = date;
     }
-    return this.http.get<TimelineResponse>(`${environment.apiUrl}/reports/attendance/timeline`, { params });
+    // The handler nests its own {data, date} object inside the envelope.
+    return this.http
+      .get<Envelope<TimelineResponse>>(`${environment.apiUrl}/reports/attendance/timeline`, { params })
+      .pipe(unwrap());
   }
 
   get_pending_users(): Observable<PendingUser[]> {
-    return this.http.get<PendingUser[]>(`${environment.apiUrl}/auth/users/pending`);
+    return this.http
+      .get<Envelope<PendingUser[]>>(`${environment.apiUrl}/auth/users/pending`)
+      .pipe(unwrap());
   }
 
   approve_user(userId: string): Observable<void> {

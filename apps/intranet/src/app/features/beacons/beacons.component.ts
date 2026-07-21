@@ -73,11 +73,15 @@ export class BeaconsComponent implements OnInit {
   }
 
   loadDepartments() {
-    this.http.get<Department[]>(`${this.apiUrl}/departments`).subscribe({
-      next: (res: any) => {
-        this.departments.set(res.data || res);
-      }
-    });
+    // May arrive bare or enveloped depending on whether authInterceptor unwrapped
+    // it; Phase 2 removes the ambiguity along with the interceptor's unwrapping.
+    this.http
+      .get<Department[] | { data: Department[] }>(`${this.apiUrl}/departments`)
+      .subscribe({
+        next: (res) => {
+          this.departments.set(Array.isArray(res) ? res : res.data);
+        }
+      });
   }
 
   openBeaconDrawer(beacon?: BleBeacon) {

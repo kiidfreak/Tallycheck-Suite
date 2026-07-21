@@ -1,9 +1,26 @@
 import logging
+import os
+import re
 import jwt
 from flask import request, g
 from models import db, Organization
 
 logger = logging.getLogger(__name__)
+
+# Schema names are interpolated into `SET search_path`, so they are restricted to
+# a strict allowlist. Matches what seed_org.py generates: tenant_<lowercased id>.
+SCHEMA_NAME_RE = re.compile(r"[a-z0-9_]+")
+
+# Only hosts under one of these resolve a tenant from their subdomain. Override
+# with a comma-separated TENANT_BASE_DOMAINS for staging or a second brand.
+TENANT_BASE_DOMAINS = tuple(
+    d.strip().lower()
+    for d in os.environ.get("TENANT_BASE_DOMAINS", "tallycheck.co.ke").split(",")
+    if d.strip()
+)
+
+# Reserved labels that are infrastructure, never tenants.
+RESERVED_SUBDOMAINS = frozenset({"www", "api", "app", "admin", "staging", "localhost"})
 
 def get_tenant_from_request():
     """
@@ -38,10 +55,18 @@ def get_tenant_from_request():
         return subdomain_header, "header"
 
     # 3. Check Hostname subdomain
-    host = request.headers.get("Host", "")
-    parts = host.split(".")
-    if len(parts) > 2 and parts[0] not in ("www", "api", "localhost", "127"):
-        return parts[0], "hostname"
+    #
+    # Matched against an explicit list of base domains rather than a part-count
+    # heuristic. `len(parts) > 2` is wrong for every ccSLD: "tallycheck.co.ke"
+    # is three parts, so the apex domain resolved as a tenant named "tallycheck"
+    # and would have hijacked any org that ever claimed that subdomain.
+    host = request.headers.get("Host", "").split(":")[0].strip().lower()
+    for base in TENANT_BASE_DOMAINS:
+        if host.endswith(f".{base}"):
+            label = host[: -(len(base) + 1)]
+            if label and "." not in label and label not in RESERVED_SUBDOMAINS:
+                return label, "hostname"
+            break
 
     return None, None
 
@@ -72,14 +97,16 @@ def set_tenant_schema():
         ).first()
         
         if org and org.is_active:
+            # SQL injection protection: the schema name is interpolated into a
+            # SET statement below, so it must be validated as a strict allowlist
+            # BEFORE it is used and before it is trusted onto `g`.
+            if not SCHEMA_NAME_RE.fullmatch(org.schema_name or ""):
+                logger.error(f"[TenantMiddleware] Malformed schema name: {org.schema_name!r}")
+                raise ValueError("Invalid schema name")
+
             g.tenant_id = org.id
             g.schema_name = org.schema_name
-            
-            # SQL Injection Protection: validate schema name characters
-            if not org.schema_name.isalnum() and '_' not in org.schema_name:
-                logger.error(f"[TenantMiddleware] Malformed schema name: {org.schema_name}")
-                raise ValueError("Invalid schema name")
-                
+
             # Set search path to isolated tenant schema with public schema fallback
             db.session.execute(db.text(f'SET search_path TO "{org.schema_name}", public'))
             logger.info(f"[TenantMiddleware] Switched search_path to {org.schema_name} (Tenant: {org.name}) via {source}")

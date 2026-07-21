@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { 
   ButtonComponent, 
   CardComponent, 
@@ -18,7 +19,8 @@ import { Organization, CreateOrganizationPayload } from '../../interfaces/organi
   standalone: true,
   imports: [
     CommonModule, 
-    FormsModule, 
+    FormsModule,
+    RouterLink,
     ButtonComponent, 
     CardComponent, 
     StatCardComponent, 
@@ -99,6 +101,11 @@ export class OrganizationsComponent implements OnInit {
     this.formType.set('corporate');
     this.formAdminEmail.set('');
     this.isModalOpen.set(true);
+  }
+
+  /** Close only when the backdrop itself was clicked, not the dialog inside it. */
+  onBackdropClick(event: MouseEvent) {
+    if (event.target === event.currentTarget) this.closeModal();
   }
 
   closeModal() {

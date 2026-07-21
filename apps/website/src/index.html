@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en-KE">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TallyCheck — Verified attendance for workplaces, schools and communities</title>
+    <meta
+      name="description"
+      content="TallyCheck records who was actually present, using Bluetooth beacons, QR codes and device binding. Built in Nairobi for Kenyan organisations."
+    />
+    <link rel="canonical" href="https://www.tallycheck.co.ke/" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.png" type="image/png" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="TallyCheck — Verified attendance" />
+    <meta
+      property="og:description"
+      content="Bluetooth and QR attendance with device binding, for workplaces, schools and children's ministries."
+    />
+    <meta property="og:url" content="https://www.tallycheck.co.ke/" />
+    <meta property="og:locale" content="en_KE" />
+    <meta name="twitter:card" content="summary" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="styles/main.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container site-header__inner">
+        <a class="brand" href="/" aria-label="TallyCheck home">
+          <svg width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+            <rect width="100" height="100" rx="18" fill="#1D4ED8" />
+            <path d="M25 22H75V34H56V78H44V34H25V22Z" fill="white" />
+            <circle cx="68" cy="68" r="18" fill="white" stroke="#1D4ED8" stroke-width="4" />
+            <path d="M58 68L65 75L79 59" stroke="#1D4ED8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <span class="brand__wordmark">TallyCheck</span>
+        </a>
+
+        <nav class="site-nav" aria-label="Primary">
+          <a href="#how">How it works</a>
+          <a href="#who">Who it is for</a>
+          <a href="#trust">Security</a>
+          <a href="#contact">Contact</a>
+        </nav>
+
+        <a class="btn btn--primary" href="#contact">Request a demo</a>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="container">
+          <span class="eyebrow" style="color: rgba(255,255,255,0.6)">TallyCheck Limited · Nairobi</span>
+          <h1>Attendance you can actually verify.</h1>
+          <p class="hero__lede">
+            Roll calls and sign-in sheets record who wrote a name down. TallyCheck records
+            who was physically there — using Bluetooth proximity, QR codes and one-device-per-person
+            binding.
+          </p>
+          <div class="hero__actions">
+            <a class="btn btn--primary" href="#contact">Request a demo</a>
+            <a class="btn btn--ghost-light" href="#how">See how it works</a>
+          </div>
+          <p class="hero__note">Currently running pilots with training institutes and member clubs in Nairobi.</p>
+        </div>
+      </section>
+
+      <section class="section" id="how">
+        <div class="container">
+          <span class="eyebrow">How it works</span>
+          <h2>Three ways in, one record</h2>
+          <p class="lede">
+            Different places need different methods. A lecture hall is not a loading bay and
+            neither is a Sunday school. All three produce the same timestamped, auditable record.
+          </p>
+
+          <div class="grid grid--3">
+            <article class="card">
+              <span class="card__tag">Bluetooth</span>
+              <h3>Beacon proximity</h3>
+              <p>
+                A small beacon in the room. Phones in range are recorded automatically after a
+                sustained presence window, so nobody queues and nothing interrupts the session.
+              </p>
+            </article>
+            <article class="card">
+              <span class="card__tag">QR</span>
+              <h3>Scan to check in</h3>
+              <p>
+                A time-limited code, shown on a screen or printed. Useful as a fallback where
+                beacons are not installed, and for one-off sessions and visitors.
+              </p>
+            </article>
+            <article class="card">
+              <span class="card__tag">Manual</span>
+              <h3>Supervised override</h3>
+              <p>
+                Phone flat, forgotten, or broken. A supervisor can record attendance directly —
+                every override is written to the audit log with who made it and why.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section--tint" id="who">
+        <div class="container">
+          <span class="eyebrow">Who it is for</span>
+          <h2>One platform, three very different rooms</h2>
+
+          <div class="grid grid--3">
+            <article class="card">
+              <h3>Workplaces</h3>
+              <p>
+                Shift-aware clock-in and clock-out, configurable cut-off windows, per-department
+                reporting, and exports for payroll. Managers can correct records; corrections are
+                logged, never silent.
+              </p>
+            </article>
+            <article class="card">
+              <h3>Schools and colleges</h3>
+              <p>
+                Class attendance without eating into teaching time. Per-course records, lecturer
+                dashboards, and exportable statistics for eligibility and reporting.
+              </p>
+            </article>
+            <article class="card">
+              <h3>Children's ministries</h3>
+              <p>
+                SafeChild handles the moment that actually carries risk: pickup. Each child is
+                issued a single-use PIN and QR pass at drop-off, and is only released against a
+                verified, authorised guardian.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="trust">
+        <div class="container">
+          <span class="eyebrow">Security and data</span>
+          <h2>Built so the record holds up</h2>
+          <p class="lede">
+            An attendance record is only worth something if it cannot be quietly faked or quietly
+            changed.
+          </p>
+
+          <div class="grid grid--2">
+            <article class="card">
+              <h3>One device, one person</h3>
+              <p>
+                An account is bound to the first device that signs in. Moving to a new phone
+                requires an administrator to approve the change, which is what stops one person
+                checking in for another.
+              </p>
+            </article>
+            <article class="card">
+              <h3>Separate database per organisation</h3>
+              <p>
+                Each organisation's data sits in its own isolated database schema, not a shared
+                table filtered by a column. One customer's records are not reachable from another
+                customer's session.
+              </p>
+            </article>
+            <article class="card">
+              <h3>Your data stays yours</h3>
+              <p>
+                Organisations own their records. We process them on your behalf, we do not sell
+                them, and you can request a full export or deletion at any time.
+              </p>
+            </article>
+            <article class="card">
+              <h3>Every change is attributable</h3>
+              <p>
+                Manual entries and corrections record who made them, when, and the reason given —
+                so a disputed timesheet has an answer rather than an argument.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section--tint">
+        <div class="container">
+          <span class="eyebrow">Getting started</span>
+          <h2>What a pilot looks like</h2>
+          <div class="steps">
+            <div class="step">
+              <h3>Scoping call</h3>
+              <p>We look at your sites, your shift or class patterns, and which check-in method fits.</p>
+            </div>
+            <div class="step">
+              <h3>Set-up</h3>
+              <p>Your organisation is provisioned, staff are invited, and any beacons are placed and labelled.</p>
+            </div>
+            <div class="step">
+              <h3>Run it live</h3>
+              <p>A few weeks with a real group, real sessions, and a review of what the data shows.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="contact">
+        <div class="container">
+          <span class="eyebrow">Contact</span>
+          <h2>Talk to us about a pilot</h2>
+          <p class="lede">
+            Tell us the setting and roughly how many people, and we will tell you honestly whether
+            TallyCheck is a fit.
+          </p>
+
+          <div class="contact">
+            <dl>
+              <dt>Email</dt>
+              <dd><a href="mailto:caesar@tallycheck.co.ke">caesar@tallycheck.co.ke</a></dd>
+              <dt>Phone</dt>
+              <dd><a href="tel:+254791578882">+254 791 578 882</a></dd>
+            </dl>
+            <dl>
+              <dt>Company</dt>
+              <dd>TallyCheck Limited</dd>
+              <dt>Location</dt>
+              <dd>Nairobi, Kenya</dd>
+            </dl>
+          </div>
+
+          <p style="margin-top: var(--space-8)">
+            <a class="btn btn--primary" href="mailto:caesar@tallycheck.co.ke?subject=TallyCheck%20demo%20request">
+              Email us about a demo
+            </a>
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <h2 class="visually-hidden">Site footer</h2>
+        <div class="site-footer__grid">
+          <div>
+            <a class="brand" href="/" style="color: #fff">
+              <svg width="24" height="24" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                <rect width="100" height="100" rx="18" fill="#3B82F6" />
+                <path d="M25 22H75V34H56V78H44V34H25V22Z" fill="white" />
+                <circle cx="68" cy="68" r="18" fill="white" stroke="#3B82F6" stroke-width="4" />
+                <path d="M58 68L65 75L79 59" stroke="#3B82F6" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <span class="brand__wordmark">TallyCheck</span>
+            </a>
+            <p style="margin-top: var(--space-4); max-width: 34ch">
+              Verified attendance for workplaces, schools and communities. Built in Nairobi.
+            </p>
+          </div>
+
+          <div>
+            <h3>Product</h3>
+            <ul class="site-footer__links">
+              <li><a href="#how">How it works</a></li>
+              <li><a href="#who">Who it is for</a></li>
+              <li><a href="#trust">Security and data</a></li>
+            </ul>
+          </div>
+
+          <div>
+            <h3>Contact</h3>
+            <ul class="site-footer__links">
+              <li><a href="mailto:caesar@tallycheck.co.ke">caesar@tallycheck.co.ke</a></li>
+              <li><a href="tel:+254791578882">+254 791 578 882</a></li>
+              <li>Nairobi, Kenya</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="site-footer__legal">
+          <span>© 2026 TallyCheck Limited. All rights reserved.</span>
+          <span>Smart. Seamless. Verified.</span>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

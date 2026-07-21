@@ -27,11 +27,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Skip the nx cache so coverage files are always (re)generated;
-      # lcov.info and coverage-summary.json are written under coverage/apps/intranet.
+      # Skip the nx cache so coverage files are always (re)generated.
+      # run-many so lib tests gate the PR too; each project writes its own
+      # coverage dir (coverage/apps/intranet, coverage/libs/*).
       - name: Test with coverage
-        run: npx nx test intranet --coverage --passWithNoTests --skip-nx-cache
+        run: npx nx run-many -t test --coverage --passWithNoTests --skip-nx-cache
 
+      # NOTE: the badge and PR comment still report apps/intranet only. Coverage
+      # is written per project, and merging the summaries needs a reporting step
+      # that does not exist yet — Phase 4 adds it along with the coverage floor.
       - name: Post coverage comment
         if: github.event_name == 'pull_request'
         uses: MishaKav/jest-coverage-comment@v1.0.27

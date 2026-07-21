@@ -82,8 +82,10 @@ export type Permission =
   | 'manage:users_roles'
   | 'manage:settings'
   | 'view:audit_log'
-  // Provisioning (Super Admin only)
-  | 'manage:organizations';
+  // Provisioning + cross-tenant platform surface (Super Admin only)
+  | 'manage:organizations'
+  | 'view:platform'
+  | 'manage:platform';
 
 const PERMISSION_MATRIX: Record<RoleKey, Permission[]> = {
   staff: [
@@ -143,6 +145,8 @@ const PERMISSION_MATRIX: Record<RoleKey, Permission[]> = {
     'safechild:view_roster', 'safechild:drop_off', 'safechild:pickup', 'safechild:manage_children',
     'manage:users_roles', 'manage:settings', 'view:audit_log',
     'manage:organizations',
+    // Cross-tenant platform dashboards + per-client report settings.
+    'view:platform', 'manage:platform',
   ],
   it_admin: [
     'view:beacons', 'manage:beacons',
@@ -284,14 +288,14 @@ const COMM = ['communication', 'communication/chat', 'communication/email'];
 export const ROLE_ACCESS: Record<RoleKey, string[]> = {
   staff:              ['home', ...COMM, 'departments', 'attendance', 'attendance-records'],
   company_admin:      ['*'],
-  hr_admin:           ['home', ...COMM, 'team', 'planning', 'reports', 'users', 'employees', 'departments', 'beacons', 'safechild', 'attendance', 'attendance-records'],
-  department_manager: ['home', ...COMM, 'team', 'planning', 'reports', 'departments', 'safechild', 'attendance', 'attendance-records'],
+  hr_admin:           ['home', ...COMM, 'team', 'planning', 'reports', 'safechild-reports', 'users-roles', 'users', 'employees', 'departments', 'beacons', 'safechild', 'attendance', 'attendance-records'],
+  department_manager: ['home', ...COMM, 'team', 'planning', 'reports', 'safechild-reports', 'departments', 'safechild', 'attendance', 'attendance-records'],
   school_admin:       ['*'],
   super_admin:        ['*'],
   lecturer:           ['home', 'attendance', 'attendance-records', 'departments', 'reports'],
-  teacher:            ['home', 'safechild', 'children', 'attendance', 'attendance-records'],
+  teacher:            ['home', 'safechild', 'children', 'attendance', 'attendance-records', 'safechild-reports', 'reports'],
   guardian:           ['home', 'safechild', 'my-children', 'pickup-history'],
-  it_admin:           ['home', 'settings', 'audit', 'beacons', 'attendance-records'],
+  it_admin:           ['home', 'settings', 'audit', 'beacons', 'attendance-records', 'users-roles'],
 };
 
 export function canAccess(role: RoleKey, routeId: string): boolean {

@@ -1,28 +1,42 @@
 // ============================================================
 //  TallyCheck — Design Tokens  (single source of styling truth)
-//  The brand ramp below is TallyCheck cobalt; every component picks
-//  up the brand from this one file, so a rebrand is a one-file edit.
 //  Consumed by every app via:  @use '@omni/theme' as *;
+//
+//  Token names are product-neutral on purpose. tcheck's cobalt is the
+//  default brand, but the workspace serves more than one product, so a
+//  second app re-themes by overriding the --brand-*/--accent-* ramps in
+//  its own :root — nothing downstream references a product by name.
 // ============================================================
+
+// Breakpoints live in _breakpoints.scss (Sass API, no CSS output) so component
+// stylesheets can use the mixins without inlining this whole file.
+// Must precede every other rule — Sass requires @forward to come first.
+@forward 'breakpoints';
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
   // ---------- BRAND (TallyCheck cobalt) ----------
-  --adept-navy:        #1E40AF;   // deepest — wordmark / sidebar base
-  --adept-navy-700:    #1D4ED8;   // sidebar + primary buttons
-  --adept-navy-600:    #2563EB;   // hover
-  --adept-navy-500:    #3B82F6;   // lighter accent
-  --adept-navy-100:    #DBEAFE;   // selected row tint
-  --adept-navy-50:     #EFF5FF;   // hover bg
+  --brand-50:      #EFF5FF;   // hover bg
+  --brand-100:     #DBEAFE;   // selected row tint
+  --brand-200:     #BFDBFE;   // subtle borders
+  --brand-500:     #3B82F6;   // lighter accent — matches the logo mark
+  --brand-600:     #2563EB;   // hover
+  --brand-700:     #1D4ED8;   // sidebar + primary buttons
+  --brand-800:     #1E40AF;   // deepest — wordmark / sidebar base
+  --brand-900:     #1E3A8A;
 
-  --adept-red:         #D80000;   // logo dots — pure brand red
-  --adept-red-700:     #B30100;   // banner red, pressed
-  --adept-red-600:     #C8102E;   // primary destructive
-  --adept-red-100:     #FCE8EA;   // red tint
-  --adept-red-50:      #FDF3F4;
+  // Near-black brand surface for inverted UI (toasts, dark panels). Not part
+  // of the cobalt ramp: it is a neutral-cool ink, and reading it off the ramp
+  // is what produced the washed-out fallbacks this replaces.
+  --brand-ink:     #0A2540;
 
-  --adept-tech-gray:   #9A9A9A;   // "TECHNOLOGIES" tracking-wide gray
+  // ---------- ACCENT (brand red — logo dots, destructive) ----------
+  --accent-50:     #FDF3F4;
+  --accent-100:    #FCE8EA;   // red tint
+  --accent-500:    #D80000;   // pure brand red
+  --accent-600:    #C8102E;   // primary destructive
+  --accent-700:    #B30100;   // banner red, pressed
 
   // ---------- NEUTRALS ----------
   --neutral-0:    #FFFFFF;
@@ -38,15 +52,20 @@
   --neutral-800:  #1A1E28;
   --neutral-900:  #0E1119;
 
-  // ---------- SEMANTIC ----------
-  --success:       #1F8A5B;
-  --success-100:   #E0F2EA;
-  --warning:       #C77700;
-  --warning-100:   #FCEFD9;
-  --danger:        var(--adept-red-600);
-  --danger-100:    var(--adept-red-100);
-  --info:          var(--adept-navy-700);
-  --info-100:      var(--adept-navy-100);
+  // ---------- STATUS ----------
+  // Each has a base (text/icon), a -tint (background) and a -strong (pressed).
+  --success:        #1F8A5B;
+  --success-tint:   #E0F2EA;
+  --success-strong: #166944;
+  --warning:        #C77700;
+  --warning-tint:   #FCEFD9;
+  --warning-strong: #9A5D00;
+  --danger:         var(--accent-600);
+  --danger-tint:    var(--accent-100);
+  --danger-strong:  var(--accent-700);
+  --info:           var(--brand-700);
+  --info-tint:      var(--brand-100);
+  --info-strong:    var(--brand-800);
 
   // attendance-specific status (used across the system)
   --status-checked-in:  #1F8A5B;
@@ -58,44 +77,61 @@
   --status-late:        #E58900;
   --status-absent:      #B30100;
 
-  // ---------- FOREGROUND TOKENS ----------
-  --fg-1: var(--neutral-900);     // primary text
-  --fg-2: var(--neutral-700);     // body
-  --fg-3: var(--neutral-500);     // muted / labels
-  --fg-4: var(--neutral-400);     // placeholder / disabled
-  --fg-on-navy:  #FFFFFF;
-  --fg-on-red:   #FFFFFF;
-  --fg-brand:    var(--adept-navy);
+  // ============================================================
+  //  SEMANTIC LAYER — what components should actually use.
+  //
+  //  Everything above is a raw palette. Everything below says what a value
+  //  is *for*. Components reference this layer only; that way a re-theme
+  //  changes the ramps above and the whole UI follows.
+  // ============================================================
 
-  // ---------- BACKGROUND TOKENS ----------
-  --bg-app:     var(--neutral-50);
-  --bg-surface: var(--neutral-0);
-  --bg-elevated:#FFFFFF;
-  --bg-sunken:  var(--neutral-100);
-  --bg-sidebar: var(--adept-navy-700);
-  --bg-hover:   var(--neutral-100);
-  --bg-selected:var(--adept-navy-100);
+  // ---------- TEXT ----------
+  --text-primary:   var(--neutral-900);   // headings, key figures
+  --text-secondary: var(--neutral-700);   // body copy
+  --text-tertiary:  var(--neutral-500);   // muted labels, captions
+  --text-disabled:  var(--neutral-400);   // placeholder / disabled
+  --text-on-brand:  #FFFFFF;
+  --text-on-accent: #FFFFFF;
+  --text-brand:     var(--brand-800);
+
+  // ---------- SURFACES ----------
+  --bg-body:      var(--neutral-50);      // page background
+  --surface-base: var(--neutral-0);       // cards, panels, table rows
+  --surface-raised: #FFFFFF;              // popovers, drawers, modals
+  --surface-sunken: var(--neutral-100);   // wells, table headers
+  --surface-hover:  var(--neutral-100);
+  --surface-selected: var(--brand-100);
+  --surface-inverted: var(--brand-ink);   // toasts, dark panels
+  --surface-sidebar:  var(--brand-700);
 
   // ---------- BORDERS ----------
-  --border-1: var(--neutral-200);
-  --border-2: var(--neutral-300);
-  --border-focus: var(--adept-navy-700);
+  --border-light:  var(--neutral-200);    // default hairline
+  --border-strong: var(--neutral-300);    // inputs, dividers that must read
+  --border-focus:  var(--brand-700);
+
+  // ---------- INTERACTIVE ----------
+  --primary:       var(--brand-700);
+  --primary-hover: var(--brand-600);
+  --primary-active:var(--brand-800);
+  --primary-tint:  var(--brand-50);
 
   // ---------- TYPOGRAPHY ----------
   --font-display: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
   --font-body:    'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-mono:    'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  // type scale
-  --fs-xs:   12px;
-  --fs-sm:   13px;
-  --fs-md:   14px;    // default body
-  --fs-lg:   16px;
-  --fs-xl:   18px;
-  --fs-2xl:  22px;
-  --fs-3xl:  28px;
-  --fs-4xl:  36px;
-  --fs-5xl:  48px;
+  // Type scale. Note --text-* covers both size (--text-sm) and colour
+  // (--text-primary), the same split Tailwind uses: sizes are t-shirt names,
+  // colours are roles. They never collide.
+  --text-xs:   12px;
+  --text-sm:   13px;
+  --text-md:   14px;    // default body
+  --text-lg:   16px;
+  --text-xl:   18px;
+  --text-2xl:  22px;
+  --text-3xl:  28px;
+  --text-4xl:  36px;
+  --text-5xl:  48px;
 
   --lh-tight:  1.2;
   --lh-snug:   1.35;
@@ -110,7 +146,8 @@
 
   --tracking-tight:  -0.02em;
   --tracking-normal: 0;
-  --tracking-wide:   0.08em;    // "TECHNOLOGIES" treatment
+  --tracking-wide:   0.08em;    // small-caps section labels
+  --tracking-wider:  0.12em;
   --tracking-widest: 0.18em;
 
   // ---------- SPACING ----------
@@ -132,25 +169,32 @@
   --radius-md: 8px;     // default card
   --radius-lg: 12px;    // large card / button
   --radius-xl: 16px;
-  --radius-pill: 999px;
+  --radius-full: 999px;   // pills, avatars
 
   // ---------- SHADOWS ----------
   --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
   --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
   --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06), 0 2px 4px rgba(15, 23, 42, 0.04);
   --shadow-lg: 0 10px 24px rgba(15, 23, 42, 0.08), 0 4px 8px rgba(15, 23, 42, 0.04);
-  --shadow-focus: 0 0 0 3px rgba(28, 70, 122, 0.25);
-  --shadow-focus-red: 0 0 0 3px rgba(200, 16, 46, 0.25);
+  --shadow-xl: 0 20px 40px rgba(15, 23, 42, 0.12), 0 8px 16px rgba(15, 23, 42, 0.06);
+  // Tinted to --brand-700 (29,78,216). Previously rgba(28,70,122) — a leftover
+  // from the pre-cobalt palette, so focus rings did not match the brand.
+  --shadow-focus: 0 0 0 3px rgba(29, 78, 216, 0.25);
+  --shadow-focus-accent: 0 0 0 3px rgba(200, 16, 46, 0.25);
 
   // ---------- LAYOUT ----------
   --sidebar-w: 240px;
   --sidebar-collapsed-w: 72px;
   --header-h: 64px;
   --content-max: 1440px;
+  --content-pad: var(--space-6);
 
-  // ---------- ALIASES ----------
-  --text-main: var(--fg-1);
-  --text-muted: var(--fg-3);
-  --border-color: var(--border-2);
-  --bg-card: var(--bg-surface);
+  // Minimum comfortable hit target on touch. Applied to nav items, icon
+  // buttons and table row actions at the phone breakpoint.
+  --tap-target: 44px;
+
+  // Depth for the mobile nav drawer and its scrim.
+  --z-drawer: 100;
+  --z-scrim: 90;
 }
+

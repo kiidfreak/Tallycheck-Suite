@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { API_URL } from '@omni/auth';
+import { Envelope, unwrap } from '@omni/api-client';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
@@ -46,27 +47,27 @@ export class SafeChildService {
   private readonly apiUrl = inject(API_URL);
 
   getChildren(): Observable<Child[]> {
-    return this.http.get<any>(`${this.apiUrl}/safechild/children`).pipe(
-      map(res => Array.isArray(res) ? res : res?.data || [])
-    );
+    return this.http
+      .get<Envelope<Child[]>>(`${this.apiUrl}/safechild/children`)
+      .pipe(unwrap(), map((children) => children ?? []));
   }
 
   logDropOff(childId: string, guardianId?: string, employeeId?: string): Observable<DropOffResponse> {
-    return this.http.post<any>(`${this.apiUrl}/safechild/drop-off`, {
-      child_id: childId,
-      guardian_id: guardianId || null,
-      employee_id: employeeId || null
-    }).pipe(
-      map(res => res?.data || res)
-    );
+    return this.http
+      .post<Envelope<DropOffResponse>>(`${this.apiUrl}/safechild/drop-off`, {
+        child_id: childId,
+        guardian_id: guardianId || null,
+        employee_id: employeeId || null,
+      })
+      .pipe(unwrap());
   }
 
   verifyPickup(code: string, verifierId?: string): Observable<VerificationResponse> {
-    return this.http.post<any>(`${this.apiUrl}/safechild/pickup/verify`, {
-      code,
-      verifier_id: verifierId || null
-    }).pipe(
-      map(res => res?.data || res)
-    );
+    return this.http
+      .post<Envelope<VerificationResponse>>(`${this.apiUrl}/safechild/pickup/verify`, {
+        code,
+        verifier_id: verifierId || null,
+      })
+      .pipe(unwrap());
   }
 }

@@ -1,0 +1,50 @@
+{
+  "name": "api-client",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "libs/api-client/src",
+  "prefix": "omni",
+  "tags": ["scope:shared", "type:data-access"],
+  "targets": {
+    "lint-spec": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx redocly lint --config docs/api/redocly.yaml"
+      }
+    },
+    "bundle-spec": {
+      "executor": "nx:run-commands",
+      "outputs": ["{workspaceRoot}/dist/api-spec"],
+      "options": {
+        "commands": [
+          "npx redocly bundle tcheck-corporate --config docs/api/redocly.yaml -o dist/api-spec/tcheck-corporate.yaml"
+        ],
+        "parallel": false
+      }
+    },
+    "generate": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["bundle-spec"],
+      "options": {
+        "command": "npx orval --config libs/api-client/orval.config.ts"
+      }
+    },
+    "generate-check": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["generate"],
+      "options": {
+        "command": "git diff --exit-code -- libs/api-client/src/generated"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/libs/api-client"],
+      "options": {
+        "jestConfig": "libs/api-client/jest.config.ts"
+      }
+    }
+  }
+}

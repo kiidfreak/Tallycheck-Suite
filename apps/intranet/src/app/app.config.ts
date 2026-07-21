@@ -1,11 +1,14 @@
-import { ApplicationConfig, importProvidersFrom, provideZoneChangeDetection } from '@angular/core';
+import { ApplicationConfig, importProvidersFrom, inject, provideZoneChangeDetection } from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { LucideAngularModule, icons, TriangleAlert } from 'lucide-angular';
 import { provideAuth0, authHttpInterceptorFn } from '@auth0/auth0-angular';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { appRoutes } from './app.routes';
 import { environment } from '../environments/environment';
-import { API_URL, authInterceptor, demoInterceptor } from '@omni/auth';
+import { API_URL, demoInterceptor } from '@omni/auth';
+import { NAV_PROVIDER, SHELL_BADGES } from '@omni/shell';
+import { navForRole } from './nav';
+import { ShellBadgesService } from './shell-badges';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -13,10 +16,12 @@ export const appConfig: ApplicationConfig = {
     provideRouter(appRoutes, withComponentInputBinding()),
     provideHttpClient(withInterceptors([
       demoInterceptor,
-      authInterceptor,
       authHttpInterceptorFn
     ])),
     { provide: API_URL, useValue: environment.apiUrl },
+    // Teach the shared shell what tcheck's navigation looks like.
+    { provide: NAV_PROVIDER, useValue: navForRole },
+    { provide: SHELL_BADGES, useFactory: () => inject(ShellBadgesService).badges },
     provideAuth0({
       domain: 'dev-x506paw8afbw6jgu.us.auth0.com',
       clientId: '438nQYs59MzRznaEU0lew3Um4RTSYTKl',

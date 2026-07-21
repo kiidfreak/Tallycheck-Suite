@@ -105,7 +105,7 @@ export class AttendanceRecordsComponent implements OnInit {
   // Active Shift State
   readonly active_shift = signal<{ clock_in: string; location: string } | null>(null);
 
-  clockInTeacherShift(location: string = 'Ezra Building - Sunday School'): void {
+  clockInTeacherShift(location = 'Ezra Building - Sunday School'): void {
     this.active_shift.set({
       clock_in: new Date().toISOString(),
       location

@@ -23,7 +23,7 @@ import { LucideAngularModule } from 'lucide-angular';
       position: fixed;
       bottom: 24px;
       right: 24px;
-      background: var(--adept-navy-800, #0a2540);
+      background: var(--brand-ink, #0a2540);
       color: white;
       padding: 16px 20px;
       border-radius: var(--radius-md, 8px);

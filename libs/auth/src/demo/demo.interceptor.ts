@@ -6,6 +6,7 @@ import {
   DEMO_ATTENDANCE_STATS,
   DEMO_ATTENDANCE_TREND,
   DEMO_BEACONS,
+  DEMO_BEACON_ASSIGNMENTS,
   DEMO_CHILDREN,
   DEMO_CLASS_HISTORY,
   DEMO_DASHBOARD_METRICS,
@@ -108,6 +109,9 @@ export const demoInterceptor: HttpInterceptorFn = (req, next) => {
   }
   if (path.startsWith('/departments')) return ok(envelope(DEMO_DEPARTMENTS));
   if (path.startsWith('/employees')) return ok(envelope(DEMO_EMPLOYEES));
+  // Order matters: '/beacons' is a prefix of '/beacons/assignments', so the
+  // specific branch has to come first or it is never reached.
+  if (path.startsWith('/beacons/assignments')) return ok(envelope(DEMO_BEACON_ASSIGNMENTS));
   if (path.startsWith('/beacons')) return ok(envelope(DEMO_BEACONS));
   if (path.startsWith('/settings')) return ok(envelope(DEMO_ORG_SETTINGS));
 

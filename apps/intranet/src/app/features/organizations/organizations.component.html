@@ -1,10 +1,14 @@
 <div class="organizations-page animate-fade-in">
   <header class="page-head">
     <div class="title-area">
-      <h1>Multi-Tenant Organizations</h1>
-      <p class="subtitle">Provision new client businesses, isolate database schemas, and manage tenant subdomains.</p>
+      <h1>Organization &amp; Structure Management</h1>
+      <p class="subtitle">Provision new client businesses, manage tenant database schemas, and configure department hierarchies.</p>
     </div>
-    <div class="action-area">
+    <div class="action-area" style="display: flex; gap: 8px;">
+      <omni-button variant="secondary" routerLink="/departments">
+        <omni-icon name="building" [size]="16"></omni-icon>
+        Department Hierarchy
+      </omni-button>
       <omni-button variant="primary" (click)="openCreateModal()">
         <omni-icon name="plus" [size]="16"></omni-icon>
         Provision New Business
@@ -63,7 +67,7 @@
                   <omni-pill tone="info">Corporate Workplace</omni-pill>
                 }
               </td>
-              <td style="font-size: 13px; color: var(--fg-2);">{{ org.admin_email || 'admin@' + org.domain + '.co.ke' }}</td>
+              <td style="font-size: 13px; color: var(--text-secondary);">{{ org.admin_email || 'admin@' + org.domain + '.co.ke' }}</td>
               <td>
                 @if (org.is_active) {
                   <omni-pill tone="success">Active</omni-pill>
@@ -93,11 +97,20 @@
 
 <!-- Provisioning Drawer / Modal -->
 @if (isModalOpen()) {
-  <div class="modal-backdrop" (click)="closeModal()">
-    <div class="modal-dialog card" (click)="$event.stopPropagation()">
+  <div
+    class="modal-backdrop"
+    role="button"
+    tabindex="0"
+    aria-label="Close dialog"
+    (click)="onBackdropClick($event)"
+    (keydown.escape)="closeModal()"
+  >
+    <!-- No click handler here: the backdrop only closes when the click target is
+         the backdrop itself, which is what stopPropagation used to achieve. -->
+    <div class="modal-dialog card" role="dialog" aria-modal="true" aria-labelledby="provision-org-title">
       <div class="modal-header">
         <div>
-          <h2>Provision New Business</h2>
+          <h2 id="provision-org-title">Provision New Business</h2>
           <p class="subtitle">Generates dedicated schema and configures tenant subdomain.</p>
         </div>
         <button class="close-btn" (click)="closeModal()">
@@ -107,30 +120,30 @@
 
       <div class="modal-body">
         <div class="form-group">
-          <label>Business / Institution Name *</label>
-          <input type="text" class="omni-input" placeholder="e.g. Globex Corporation" [ngModel]="formName()" (ngModelChange)="formName.set($event)" />
+          <label for="org-name">Business / Institution Name *</label>
+          <input id="org-name" type="text" class="omni-input" placeholder="e.g. Globex Corporation" [ngModel]="formName()" (ngModelChange)="formName.set($event)" />
         </div>
 
         <div class="form-group">
-          <label>Corporate Subdomain *</label>
+          <label for="org-domain">Corporate Subdomain *</label>
           <div class="input-addon-wrapper">
-            <input type="text" class="omni-input" placeholder="e.g. globex" [ngModel]="formDomain()" (ngModelChange)="formDomain.set($event)" />
+            <input id="org-domain" type="text" class="omni-input" placeholder="e.g. globex" [ngModel]="formDomain()" (ngModelChange)="formDomain.set($event)" />
             <span class="addon">.tallycheck.co.ke</span>
           </div>
           <small class="help-text">Database schema will be auto-named <code>tenant_{{ formDomain() || 'subdomain' }}</code></small>
         </div>
 
         <div class="form-group">
-          <label>Vertical / Organization Type *</label>
-          <select class="omni-select" [ngModel]="formType()" (ngModelChange)="formType.set($event)">
+          <label for="org-type">Vertical / Organization Type *</label>
+          <select id="org-type" class="omni-select" [ngModel]="formType()" (ngModelChange)="formType.set($event)">
             <option value="corporate">Corporate Workplace (Shifts & Attendance)</option>
             <option value="education">Education & Church (Schools, Sunday School & Beacons)</option>
           </select>
         </div>
 
         <div class="form-group">
-          <label>Primary Administrator Email *</label>
-          <input type="email" class="omni-input" placeholder="e.g. admin@globex.com" [ngModel]="formAdminEmail()" (ngModelChange)="formAdminEmail.set($event)" />
+          <label for="org-admin-email">Primary Administrator Email *</label>
+          <input id="org-admin-email" type="email" class="omni-input" placeholder="e.g. admin@globex.com" [ngModel]="formAdminEmail()" (ngModelChange)="formAdminEmail.set($event)" />
         </div>
       </div>
 

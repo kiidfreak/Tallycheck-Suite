@@ -4,7 +4,7 @@
   "projectType": "application",
   "prefix": "app",
   "sourceRoot": "apps/intranet/src",
-  "tags": [],
+  "tags": ["scope:tcheck", "type:app"],
   "targets": {
     "build": {
       "executor": "@angular-devkit/build-angular:application",
@@ -55,6 +55,27 @@
           ],
           "outputHashing": "all"
         },
+        "demo": {
+          "fileReplacements": [
+            {
+              "replace": "apps/intranet/src/environments/environment.ts",
+              "with": "apps/intranet/src/environments/environment.demo.ts"
+            }
+          ],
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "1mb",
+              "maximumError": "2mb"
+            },
+            {
+              "type": "anyComponentStyle",
+              "maximumWarning": "12kb",
+              "maximumError": "20kb"
+            }
+          ],
+          "outputHashing": "all"
+        },
         "development": {
           "optimization": false,
           "extractLicenses": false,
@@ -68,6 +89,9 @@
       "configurations": {
         "production": {
           "buildTarget": "intranet:build:production"
+        },
+        "demo": {
+          "buildTarget": "intranet:build:demo"
         },
         "development": {
           "buildTarget": "intranet:build:development"

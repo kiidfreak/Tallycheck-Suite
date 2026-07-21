@@ -1,0 +1,62 @@
+@use 'theme/src/styles/breakpoints' as *;
+
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+  background: var(--bg-body);
+}
+
+.app-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0; // lets wide tables scroll instead of stretching the layout
+  flex: 1;
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+}
+
+// ── Mobile drawer ───────────────────────────────────────────────
+// The sidebar keeps its own width and styling; the shell only decides where it
+// sits. omni-sidebar is a custom element, so it needs display:block to size.
+:host ::ng-deep omni-sidebar {
+  display: block;
+}
+
+@include tablet-down {
+  :host ::ng-deep omni-sidebar {
+    position: fixed;
+    inset-block: 0;
+    inset-inline-start: 0;
+    z-index: var(--z-drawer);
+    transform: translateX(-100%);
+    transition: transform 180ms ease;
+    box-shadow: var(--shadow-xl);
+  }
+
+  .app-shell.nav-open ::ng-deep omni-sidebar {
+    transform: translateX(0);
+  }
+
+  .nav-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-scrim);
+    border: 0;
+    padding: 0;
+    background: rgba(10, 37, 64, 0.45);
+    cursor: pointer;
+    // The scrim is a button so it is keyboard-reachable, but it duplicates the
+    // Escape handler and the close control, so hide it from screen readers.
+    appearance: none;
+  }
+}
+
+// Respect users who have asked for less motion.
+@media (prefers-reduced-motion: reduce) {
+  :host ::ng-deep omni-sidebar {
+    transition: none;
+  }
+}

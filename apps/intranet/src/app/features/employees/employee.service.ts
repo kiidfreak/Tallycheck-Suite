@@ -1,6 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
+import { Envelope, unwrap } from '@omni/api-client';
 import { environment } from '../../../environments/environment';
 import { Employee, EmployeeListResponse, EmployeeFilters, CreateEmployeePayload, UpdateEmployeePayload } from '../../interfaces/employees.interface'
 
@@ -23,19 +24,26 @@ export class EmployeeService {
     if (filters.is_approved !== undefined) params = params.set('is_approved', filters.is_approved);
     if (filters.role) params = params.set('role', filters.role);
 
+    // EmployeeListResponse is `{data, meta}` — structurally the envelope.
     return this.http.get<EmployeeListResponse>(`${this.apiUrl}/employees`, { params });
   }
 
   getEmployee(id: string): Observable<Employee> {
-    return this.http.get<Employee>(`${this.apiUrl}/employees/${id}`);
+    return this.http
+      .get<Envelope<Employee>>(`${this.apiUrl}/employees/${id}`)
+      .pipe(unwrap());
   }
 
   createEmployee(payload: CreateEmployeePayload): Observable<Employee> {
-    return this.http.post<Employee>(`${this.apiUrl}/employees`, payload);
+    return this.http
+      .post<Envelope<Employee>>(`${this.apiUrl}/employees`, payload)
+      .pipe(unwrap());
   }
 
   updateEmployee(id: string, payload: UpdateEmployeePayload): Observable<Employee> {
-    return this.http.put<Employee>(`${this.apiUrl}/employees/${id}`, payload);
+    return this.http
+      .put<Envelope<Employee>>(`${this.apiUrl}/employees/${id}`, payload)
+      .pipe(unwrap());
   }
 
   deactivateEmployee(id: string): Observable<{ message: string }> {

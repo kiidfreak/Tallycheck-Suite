@@ -36,8 +36,8 @@ import { IconComponent } from './icon.component';
         height: 100%;
         min-height: 110px;
         box-sizing: border-box;
-        background: var(--bg-surface);
-        border: 1px solid var(--border-1);
+        background: var(--surface-base);
+        border: 1px solid var(--border-light);
         border-radius: var(--radius-lg);
         box-shadow: var(--shadow-sm);
         padding: var(--space-5);
@@ -49,12 +49,12 @@ import { IconComponent } from './icon.component';
         &:hover {
           transform: translateY(-4px);
           box-shadow: var(--shadow-md);
-          border-color: var(--border-2);
+          border-color: var(--border-strong);
         }
       }
       .caption {
         font-size: 11px;
-        color: var(--fg-3);
+        color: var(--text-tertiary);
         text-transform: uppercase;
         letter-spacing: var(--tracking-wide);
         font-weight: var(--fw-bold);
@@ -65,26 +65,26 @@ import { IconComponent } from './icon.component';
         align-items: center;
       }
       .info-icon {
-        color: var(--fg-4);
+        color: var(--text-disabled);
         cursor: help;
         transition: color 0.2s;
       }
       .info-icon:hover {
-        color: var(--fg-2);
+        color: var(--text-secondary);
       }
       .value {
         font-family: var(--font-display);
         font-weight: var(--fw-extrabold);
-        font-size: var(--fs-4xl);
+        font-size: var(--text-4xl);
         letter-spacing: var(--tracking-tight);
-        color: var(--fg-brand);
+        color: var(--text-brand);
         line-height: 1;
         margin: var(--space-1) 0;
       }
       .delta {
-        font-size: var(--fs-xs);
+        font-size: var(--text-xs);
         font-weight: var(--fw-semibold);
-        color: var(--fg-3);
+        color: var(--text-tertiary);
       }
       .delta.success {
         color: var(--success);

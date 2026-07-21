@@ -18,7 +18,7 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
         gap: var(--space-2);
         font-family: var(--font-body);
         font-weight: var(--fw-semibold);
-        font-size: var(--fs-md);
+        font-size: var(--text-md);
         line-height: 1;
         padding: 10px 16px;
         border-radius: var(--radius-lg);
@@ -35,41 +35,41 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
         box-shadow: var(--shadow-focus);
       }
       .btn-primary {
-        background: var(--adept-navy-700);
-        color: var(--fg-on-navy);
+        background: var(--brand-700);
+        color: var(--text-on-brand);
       }
       .btn-primary:hover {
-        background: var(--adept-navy-600);
+        background: var(--brand-600);
       }
       .btn-secondary {
-        background: var(--bg-surface);
-        color: var(--fg-1);
-        border-color: var(--border-2);
+        background: var(--surface-base);
+        color: var(--text-primary);
+        border-color: var(--border-strong);
       }
       .btn-secondary:hover {
-        background: var(--bg-hover);
+        background: var(--surface-hover);
       }
       .btn-ghost {
         background: transparent;
-        color: var(--fg-2);
+        color: var(--text-secondary);
       }
       .btn-ghost:hover {
-        background: var(--bg-hover);
+        background: var(--surface-hover);
       }
       .btn-danger {
-        background: var(--adept-red-600);
-        color: var(--fg-on-red);
+        background: var(--accent-600);
+        color: var(--text-on-accent);
       }
       .btn-danger:hover {
-        background: var(--adept-red-700);
+        background: var(--accent-700);
       }
       .btn-sm {
         padding: 6px 12px;
-        font-size: var(--fs-sm);
+        font-size: var(--text-sm);
       }
       .btn-lg {
         padding: 12px 20px;
-        font-size: var(--fs-lg);
+        font-size: var(--text-lg);
       }
     `,
   ],

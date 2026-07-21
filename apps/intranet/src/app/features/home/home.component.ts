@@ -15,6 +15,7 @@ import {
 } from '@omni/ui';
 import { AttendanceService } from '../attendance/attendance.service';
 import { SafeChildService, Child } from '../safechild/safechild.service';
+import { BeaconService } from '../beacons/beacon.service';
 import { AttendanceRecord, ClockOutResponse } from '../../interfaces/attendance.interface';
 import { LucideAngularModule } from 'lucide-angular';
 import { ClockInFormComponent, ClockInSubmit } from './clock-in-form/clock-in-form.component';
@@ -47,6 +48,15 @@ export class HomeComponent implements OnDestroy {
   readonly user = this.auth.user;
   private readonly attendance_service = inject(AttendanceService);
   private readonly safechild_service = inject(SafeChildService);
+  private readonly beacon_service = inject(BeaconService);
+
+  readonly is_admin = computed(
+    () => this.auth.role() === 'super_admin' || this.auth.role() === 'company_admin' || this.auth.role() === 'it_admin'
+  );
+
+  readonly beacons_total = signal(12);
+  readonly beacons_online = signal(12);
+  readonly management_sla = signal('99.85%');
 
   /**
    * True for users whose day is the children's roster rather than corporate
@@ -229,7 +239,7 @@ export class HomeComponent implements OnDestroy {
   });
 
   quickApps = [
-    { name: 'LMS', icon: 'book-open', color: 'var(--adept-navy-700)' },
+    { name: 'LMS', icon: 'book-open', color: 'var(--brand-700)' },
     { name: 'IdeaHub', icon: 'lightbulb', color: '#d97706' },
     { name: 'Leads Generator', icon: 'users', color: 'var(--success)' }
   ];

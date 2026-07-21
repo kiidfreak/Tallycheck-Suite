@@ -43,7 +43,7 @@
 
   th, td {
     padding: 14px 18px;
-    border-bottom: 1px solid var(--border-color, #e2e8f0);
+    border-bottom: 1px solid var(--border-strong, #e2e8f0);
     font-size: 14px;
   }
 
@@ -51,9 +51,9 @@
     font-size: 12px;
     font-weight: 600;
     text-transform: uppercase;
-    color: var(--text-muted, #94a3b8);
+    color: var(--text-tertiary, #94a3b8);
     letter-spacing: 0.5px;
-    background: var(--bg-surface, #f8fafc);
+    background: var(--surface-base, #f8fafc);
   }
 }
 
@@ -74,13 +74,13 @@
 
   .org-id {
     font-size: 11px;
-    color: var(--text-muted, #94a3b8);
+    color: var(--text-tertiary, #94a3b8);
     font-family: monospace;
   }
 }
 
 .subdomain-link {
-  color: var(--primary-base, #2563eb);
+  color: var(--primary, #2563eb);
   text-decoration: none;
   font-weight: 500;
   display: inline-flex;
@@ -103,7 +103,7 @@
 
 .action-btn {
   background: transparent;
-  border: 1px solid var(--border-color, #cbd5e1);
+  border: 1px solid var(--border-strong, #cbd5e1);
   border-radius: 6px;
   padding: 6px;
   cursor: pointer;
@@ -168,7 +168,7 @@
     background: transparent;
     border: none;
     cursor: pointer;
-    color: var(--text-muted, #94a3b8);
+    color: var(--text-tertiary, #94a3b8);
 
     &:hover { color: #0f172a; }
   }
@@ -194,16 +194,16 @@
 
   .omni-input, .omni-select {
     padding: 10px 12px;
-    border: 1px solid var(--border-color, #cbd5e1);
+    border: 1px solid var(--border-strong, #cbd5e1);
     border-radius: 8px;
     font-size: 14px;
     color: var(--text-primary, #0f172a);
-    background: var(--bg-surface, #f8fafc);
+    background: var(--surface-base, #f8fafc);
     outline: none;
     transition: border 0.2s;
 
     &:focus {
-      border-color: var(--primary-base, #2563eb);
+      border-color: var(--primary, #2563eb);
       background: white;
     }
   }
@@ -222,7 +222,7 @@
   .addon {
     background: #e2e8f0;
     padding: 10px 12px;
-    border: 1px solid var(--border-color, #cbd5e1);
+    border: 1px solid var(--border-strong, #cbd5e1);
     border-left: none;
     border-top-right-radius: 8px;
     border-bottom-right-radius: 8px;
@@ -234,10 +234,10 @@
 
 .help-text {
   font-size: 11px;
-  color: var(--text-muted, #64748b);
+  color: var(--text-tertiary, #64748b);
 
   code {
-    color: var(--primary-base, #2563eb);
+    color: var(--primary, #2563eb);
   }
 }
 

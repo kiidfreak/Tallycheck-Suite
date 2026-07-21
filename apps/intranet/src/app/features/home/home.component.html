@@ -39,14 +39,12 @@
                 <strong style="font-size: 16px; color: #0f172a; display: block;">{{ child.name }}</strong>
                 <span style="font-size: 12px; color: #64748b;">{{ child.group_name }} · Ezra Building</span>
               </div>
-              <span style="background: #dcfce7; color: #15803d; padding: 4px 10px; border-radius: 999px; font-weight: 600; font-size: 12px;">
-                🟢 Present in Room
-              </span>
+              <omni-pill tone="success">Present in Room</omni-pill>
             </div>
 
             <div style="margin-top: 16px; padding: 12px; background: #ffffff; border: 1px solid #e0e7ff; border-radius: 8px;">
-              <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #4338ca; font-weight: 700;">
-                🔐 Active Pickup PIN
+              <div style="display: flex; align-items: center; gap: 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #4338ca; font-weight: 700;">
+                <omni-icon name="key" [size]="12"></omni-icon> Active Pickup PIN
               </div>
               <div style="font-size: 24px; font-weight: 800; color: #1e1b4b; letter-spacing: 4px; margin-top: 4px;">
                 5842
@@ -131,8 +129,8 @@
             </omni-button>
           </div>
 
-          <div style="margin-top: 8px; border-top: 1px solid var(--border-color, #e2e8f0); padding-top: 10px;">
-            <h4 style="margin: 0 0 8px 0; font-size: 12px; color: var(--fg-1); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Recent Approvals</h4>
+          <div style="margin-top: 8px; border-top: 1px solid var(--border-strong, #e2e8f0); padding-top: 10px;">
+            <h4 style="margin: 0 0 8px 0; font-size: 12px; color: var(--text-primary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Recent Approvals</h4>
             <div style="display: flex; flex-direction: column; gap: 6px;">
               @for (rec of recent_history().slice(0, 3); track rec.id) {
                 <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: #f8fafc; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 11px;">
@@ -232,11 +230,11 @@
                     </td>
                     <td style="padding: 10px 12px;">
                       @if (child.status === 'checked_in') {
-                        <span style="font-weight: 600; color: #16a34a;">🟢 Checked In</span>
+                        <omni-pill tone="success">Checked In</omni-pill>
                       } @else if (child.status === 'released') {
-                        <span style="font-weight: 600; color: #2563eb;">🔵 Picked Up &amp; Released</span>
+                        <omni-pill tone="info">Picked Up &amp; Released</omni-pill>
                       } @else {
-                        <span style="font-weight: 600; color: #dc2626;">🔴 Awaiting Drop-off</span>
+                        <omni-pill tone="danger">Awaiting Drop-off</omni-pill>
                       }
                     </td>
                     <td style="padding: 10px 12px; text-align: right;">
@@ -260,6 +258,12 @@
     </div>
 
   </div>
+} @else if (is_admin()) {
+  <section class="stats">
+    <omni-stat-card label="BLE Beacon Hardware" [value]="beacons_online() + ' / ' + beacons_total() + ' Online'" delta="100% Signal Operational" deltaTone="success" />
+    <omni-stat-card label="Management SLA" [value]="management_sla()" delta="Exceeding 99.5% Target" deltaTone="success" />
+    <omni-stat-card label="Tenant Orgs &amp; Departments" value="Active Schemas" delta="Hierarchical Scope Verified" deltaTone="success" />
+  </section>
 } @else {
   <section class="stats">
     <omni-stat-card label="Your hours this week" [value]="hours_this_week() + 'h'" [delta]="get_hours_delta()" />
@@ -437,7 +441,7 @@
           <lucide-icon name="x" [size]="20"></lucide-icon>
         </button>
         <div class="header-icon">
-          <lucide-icon name="fingerprint" [size]="24" color="var(--primary-color, white)"></lucide-icon>
+          <lucide-icon name="fingerprint" [size]="24" color="var(--primary, white)"></lucide-icon>
         </div>
         <div class="header-titles">
           <h2 class="modal-title">

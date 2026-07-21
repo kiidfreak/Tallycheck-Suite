@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_URL } from '@omni/auth';
+import { Envelope, unwrap } from '@omni/api-client';
 import { 
   DashboardMetrics, 
   PaginatedReportAttendance, 
@@ -20,7 +21,9 @@ export class ReportService {
    * Fetches the top-level dashboard KPI metrics for the current day.
    */
   get_dashboard_metrics(): Observable<DashboardMetrics> {
-    return this.http.get<DashboardMetrics>(`${this.apiUrl}/reports/dashboard`);
+    return this.http
+      .get<Envelope<DashboardMetrics>>(`${this.apiUrl}/reports/dashboard`)
+      .pipe(unwrap());
   }
 
   /**
@@ -42,6 +45,8 @@ export class ReportService {
     if (params.page) http_params = http_params.set('page', params.page);
     if (params.per_page) http_params = http_params.set('per_page', params.per_page);
 
+    // PaginatedReportAttendance is `{data, meta}` — structurally the envelope,
+    // so this needs no unwrapping.
     return this.http.get<PaginatedReportAttendance>(`${this.apiUrl}/reports/attendance`, { params: http_params });
   }
 
@@ -56,7 +61,9 @@ export class ReportService {
     if (params.date_from) http_params = http_params.set('date_from', params.date_from);
     if (params.date_to) http_params = http_params.set('date_to', params.date_to);
 
-    return this.http.get<ReportDepartmentAttendance[]>(`${this.apiUrl}/reports/attendance/departments`, { params: http_params });
+    return this.http
+      .get<Envelope<ReportDepartmentAttendance[]>>(`${this.apiUrl}/reports/attendance/departments`, { params: http_params })
+      .pipe(unwrap());
   }
 
   /**

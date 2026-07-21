@@ -51,7 +51,7 @@ import { CardComponent, IconComponent } from '@omni/ui';
         text-align: center;
         gap: var(--space-3);
         padding: var(--space-10) var(--space-4);
-        color: var(--fg-3);
+        color: var(--text-tertiary);
       }
       .badge {
         width: 56px;
@@ -60,18 +60,18 @@ import { CardComponent, IconComponent } from '@omni/ui';
         display: flex;
         align-items: center;
         justify-content: center;
-        background: var(--adept-navy-50);
-        color: var(--adept-navy-700);
+        background: var(--brand-50);
+        color: var(--brand-700);
       }
       .t {
         font-family: var(--font-display);
         font-weight: var(--fw-semibold);
-        font-size: var(--fs-lg);
-        color: var(--fg-1);
+        font-size: var(--text-lg);
+        color: var(--text-primary);
       }
       .b {
         max-width: 420px;
-        font-size: var(--fs-sm);
+        font-size: var(--text-sm);
       }
     `,
   ],

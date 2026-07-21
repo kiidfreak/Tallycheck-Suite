@@ -17,16 +17,16 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
         border-radius: 50%;
         font-family: var(--font-display);
         font-weight: var(--fw-semibold);
-        font-size: var(--fs-sm);
-        background: var(--adept-navy-100);
-        color: var(--adept-navy-700);
+        font-size: var(--text-sm);
+        background: var(--brand-100);
+        color: var(--brand-700);
       }
       .avatar.success {
-        background: var(--success-100);
+        background: var(--success-tint);
         color: var(--success);
       }
       .avatar.warning {
-        background: var(--warning-100);
+        background: var(--warning-tint);
         color: var(--warning);
       }
       .avatar.purple {
@@ -36,12 +36,12 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
       .avatar.sm {
         width: 28px;
         height: 28px;
-        font-size: var(--fs-xs);
+        font-size: var(--text-xs);
       }
       .avatar.lg {
         width: 48px;
         height: 48px;
-        font-size: var(--fs-lg);
+        font-size: var(--text-lg);
       }
     `,
   ],

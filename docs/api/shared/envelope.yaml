@@ -1,0 +1,71 @@
+# The response envelope, as actually emitted by libs/py_success/success.py:
+#
+#     {"message": "...", "data": <payload>}          # meta omitted when None
+#     {"message": "...", "data": [...], "meta": {}}  # list endpoints
+#
+# OpenAPI 3.0 has no generics, so each payload type needs its own wrapper via
+# allOf. That is verbose but it is the honest description of the wire format —
+# and modelling it explicitly is what lets the client stop guessing whether a
+# body has already been unwrapped.
+
+components:
+  schemas:
+    SuccessEnvelope:
+      type: object
+      required: [message, data]
+      properties:
+        message:
+          type: string
+          example: Success
+        data:
+          # Deliberately untyped: in OpenAPI 3.0 an absent `type` means "any",
+          # which is what the base envelope needs. Each endpoint's allOf wrapper
+          # narrows it. `nullable` is not used here because 3.0 requires a `type`
+          # sibling for it.
+          description: Payload. Shape is narrowed by each endpoint's wrapper.
+        meta:
+          $ref: '#/components/schemas/Meta'
+
+    Meta:
+      type: object
+      description: Present only on paginated collections.
+      properties:
+        page:
+          type: integer
+          minimum: 1
+          example: 1
+        per_page:
+          type: integer
+          minimum: 1
+          example: 25
+        total:
+          type: integer
+          minimum: 0
+          example: 137
+        pages:
+          type: integer
+          minimum: 0
+          example: 6
+
+    # Envelope carrying no payload — acknowledgements.
+    EmptyEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              nullable: true
+              example: null
+
+    # Delete handlers return the affected id, e.g. {"id": "<uuid>"}.
+    DeletedEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/SuccessEnvelope'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                id:
+                  type: string

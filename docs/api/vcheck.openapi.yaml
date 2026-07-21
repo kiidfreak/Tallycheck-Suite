@@ -1,0 +1,30 @@
+openapi: 3.0.3
+info:
+  title: VCheck Visitor Management API
+  description: |
+    **STUB — not yet authored against a real service.**
+
+    Visitor management lives in `Vcheck-Enterprise` (Dart/Flutter) and
+    `vcheck-admin` (TypeScript), neither of which is cloned locally. This file
+    exists so the contract directory has a slot for it and `orval.config.ts` has
+    somewhere to point once the repos are available.
+
+    Do not generate a client from this yet — it describes nothing. The intended
+    workflow is: clone the vcheck repos, inventory their real endpoint surface,
+    author this document from that, and only then wire up codegen.
+  version: 0.0.0
+
+servers:
+  - url: https://vcheck.tallycheck.co.ke/api/v1
+    description: Placeholder — not verified against a running service.
+
+security:
+  - Auth0: []
+
+components:
+  securitySchemes:
+    Auth0:
+      type: openIdConnect
+      openIdConnectUrl: https://dev-x506paw8afbw6jgu.us.auth0.com/.well-known/openid-configuration
+
+paths: {}

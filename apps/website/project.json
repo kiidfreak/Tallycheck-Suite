@@ -1,0 +1,36 @@
+{
+  "name": "website",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/website/src",
+  "tags": ["scope:marketing", "type:app"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": ["{workspaceRoot}/dist/apps/website"],
+      "options": {
+        "parallel": false,
+        "commands": [
+          "node tools/copy-static.mjs apps/website/src dist/apps/website",
+          "npx sass apps/website/src/styles/main.scss dist/apps/website/styles/main.css --load-path=libs --style=compressed --no-source-map"
+        ]
+      },
+      "configurations": {
+        "development": {
+          "commands": [
+            "node tools/copy-static.mjs apps/website/src dist/apps/website",
+            "npx sass apps/website/src/styles/main.scss dist/apps/website/styles/main.css --load-path=libs"
+          ]
+        }
+      }
+    },
+    "serve": {
+      "executor": "@nx/web:file-server",
+      "options": {
+        "buildTarget": "website:build",
+        "staticFilePath": "dist/apps/website",
+        "port": 4300
+      }
+    }
+  }
+}

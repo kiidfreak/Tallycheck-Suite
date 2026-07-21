@@ -5,6 +5,7 @@ import { AuthService as Auth0Service } from '@auth0/auth0-angular';
 import { ROLES, RoleKey, UserProfile, Permission, hasPermission } from '../roles';
 import { API_URL } from '../api-url.token';
 import { is_demo_mode } from '../demo/demo-mode';
+import { Envelope, unwrap } from '@omni/api-client';
 import { catchError, map, of, take, switchMap } from 'rxjs';
 
 export interface DbProfile {
@@ -81,7 +82,8 @@ export class AuthService {
       take(1),
       switchMap(token => {
         const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-        return this.http.get<DbProfile>(`${this.apiUrl}/auth/me`, { headers }).pipe(
+        return this.http.get<Envelope<DbProfile>>(`${this.apiUrl}/auth/me`, { headers }).pipe(
+          unwrap(),
           catchError(err => {
             const body = err.error as ApiError | undefined;
             if (err.status === 404 || body?.error === 'employee_not_found') {
@@ -139,9 +141,9 @@ export class AuthService {
           custom_shift_end: profile.custom_shift_end
         });
 
-        const isDemo = is_demo_mode();
-        const approved = isDemo ? true : profile.is_approved;
+        const approved = profile.is_approved;
         this._is_approved.set(approved);
+        this._profile_loaded.set(true);
 
         if (!approved) {
           this.router.navigate(['/pending']);
@@ -155,8 +157,8 @@ export class AuthService {
   register_user(
     first_name: string,
     last_name: string,
-    shift_type: string = 'standard',
-    shift_hours: string = '7am-5pm',
+    shift_type = 'standard',
+    shift_hours = '7am-5pm',
     custom_shift_start?: string,
     custom_shift_end?: string
   ) {
@@ -164,7 +166,7 @@ export class AuthService {
     return this.auth0.user$.pipe(
       take(1),
       switchMap(auth_user => {
-        return this.http.post<RegisterResponse>(`${this.apiUrl}/auth/register`, {
+        return this.http.post<Envelope<RegisterResponse>>(`${this.apiUrl}/auth/register`, {
           first_name: first_name,
           last_name: last_name,
           shift_type: shift_type,
@@ -174,6 +176,7 @@ export class AuthService {
           email: auth_user?.email // Send the real email to the backend!
         });
       }),
+      unwrap(),
       map(res => {
         this.fetch_db_profile(); // Reload the profile which will automatically redirect to /pending
         return res;
@@ -182,9 +185,11 @@ export class AuthService {
   }
 
   getOrganizationBySubdomain(subdomain: string) {
-    return this.http.get<{ id: string; name: string; domain: string; is_active: boolean }>(
-      `${this.apiUrl}/auth/organization-by-subdomain/${subdomain}`
-    );
+    return this.http
+      .get<Envelope<{ id: string; name: string; domain: string; is_active: boolean }>>(
+        `${this.apiUrl}/auth/organization-by-subdomain/${subdomain}`
+      )
+      .pipe(unwrap());
   }
 
   login(subdomain?: string): void {
@@ -212,7 +217,19 @@ export class AuthService {
     this.auth0.logout({ logoutParams: { returnTo: window.location.origin } });
   }
 
+  /**
+   * Demo-only role switcher, backing the "View as" control in the sidebar.
+   *
+   * This grants itself approval and marks the profile loaded, so outside demo
+   * mode it is a client-side privilege escalation against the UI. The server
+   * still enforces `roles_required`, so it never widened data access — but it
+   * let a signed-in user reach admin screens they should not see.
+   */
   set_role(role: RoleKey): void {
+    if (!is_demo_mode()) {
+      console.warn('[AuthService] set_role() ignored: only available in demo mode.');
+      return;
+    }
     this._role.set(role);
     this._user_profile.set(ROLES[role]);
     this._is_approved.set(true);

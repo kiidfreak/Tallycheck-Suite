@@ -86,17 +86,37 @@ def create_app(test_config: Optional[dict[str, Any]] = None) -> Flask:
     from beacon_routes import beacon_bp
     api_v2.register_blueprint(beacon_bp)
 
+    from zone_routes import zone_bp
+    api_v2.register_blueprint(zone_bp)
+
     from safechild_routes import safechild_bp
     api_v2.register_blueprint(safechild_bp)
 
     from settings_routes import settings_bp
     api_v2.register_blueprint(settings_bp)
 
+    from platform_routes import platform_bp
+    api_v2.register_blueprint(platform_bp)
+
     app.register_blueprint(api_v2)
 
     # Register tenant resolution middleware
     from utils.tenant_middleware import set_tenant_schema
     app.before_request(set_tenant_schema)
+
+    @app.teardown_request
+    def _reset_search_path(exc: Optional[BaseException] = None) -> None:
+        """Defense-in-depth against a leaked search_path.
+
+        `tenant_scope` already restores the path in its own finally, but a bug
+        or an exception path that bypasses it must never let a pooled connection
+        carry one tenant's schema into the next request. Reset unconditionally at
+        request teardown; swallow errors so teardown itself cannot fail.
+        """
+        try:
+            db.session.execute(db.text("SET search_path TO public"))
+        except Exception:
+            pass
 
     @app.cli.command("seed-db")
     def seed_db() -> None:

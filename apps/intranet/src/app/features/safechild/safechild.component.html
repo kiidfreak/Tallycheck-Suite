@@ -113,13 +113,9 @@
           <div class="card-footer">
             <div class="status-indicator">
               @if (child.status === 'checked_in') {
-                <span class="status-pill status-checked">
-                  🟢 Present (In room)
-                </span>
+                <omni-pill tone="success">Present (In room)</omni-pill>
               } @else {
-                <span class="status-pill status-absent">
-                  🔴 Absent (Not checked in)
-                </span>
+                <omni-pill tone="danger">Absent (Not checked in)</omni-pill>
               }
             </div>
 
@@ -137,8 +133,8 @@
               } @else {
                 <!-- Parent Guardian Pass View -->
                 <div style="display: flex; align-items: center; gap: 8px;">
-                  <span style="font-size: 11px; font-weight: 700; color: #1e1b4b; background: #e0e7ff; padding: 4px 8px; border-radius: 6px; font-family: monospace;">
-                    🔐 PIN: 5842
+                  <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; color: #1e1b4b; background: #e0e7ff; padding: 4px 8px; border-radius: 6px; font-family: monospace;">
+                    <omni-icon name="key" [size]="12"></omni-icon> PIN: 5842
                   </span>
                   <omni-button variant="primary" size="sm" (click)="openVerifyPanel()">
                     Digital Pass
@@ -153,8 +149,8 @@
           <omni-icon name="user-x" [size]="48" class="empty-icon"></omni-icon>
           <p style="margin: 12px 0 16px 0; color: #64748b; font-size: 14px;">No children match your search criteria or current class selection.</p>
           <div style="display: flex; gap: 8px; justify-content: center;">
-            <omni-button variant="primary" size="sm" (click)="loadChildren()">
-              🔄 Reload Roster Data
+            <omni-button variant="primary" size="sm" (click)="loadChildren()" style="display: inline-flex; align-items: center; gap: 6px;">
+              <omni-icon name="rotate-cw" [size]="14"></omni-icon> Reload Roster Data
             </omni-button>
           </div>
         </div>
@@ -280,14 +276,16 @@
               @if (activeVerificationResult()?.child_photo) {
                 <img [src]="activeVerificationResult()?.child_photo" alt="Child profile" />
               } @else {
-                <div class="photo-placeholder">
-                  👦
+                <div class="photo-placeholder" style="display: flex; align-items: center; justify-content: center; height: 100%;">
+                  <omni-icon name="user" [size]="32" color="#94a3b8"></omni-icon>
                 </div>
               }
             </div>
 
             <div class="verification-meta">
-              <h4 class="release-title">🟢 Verification Approved</h4>
+              <h4 class="release-title" style="display: flex; align-items: center; gap: 6px;">
+                <omni-icon name="check-circle" [size]="18" color="var(--success)"></omni-icon> Verification Approved
+              </h4>
               <p>Release child <strong>{{ activeVerificationResult()?.child_name }}</strong> to:</p>
               
               <div class="guardian-identity">

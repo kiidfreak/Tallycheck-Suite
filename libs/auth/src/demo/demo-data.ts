@@ -169,6 +169,19 @@ export const DEMO_BEACONS = [
   { id: 'b4', name: 'Security Main Gate', mac_address: 'AA:BB:CC:DD:EE:04', uuid: 'f7826da6-4fa2-4e98-8024-bc5b71e0893e', major: 3, minor: 1, location: 'Main Gate Barrier', description: 'Security Patrol Checkpoint', is_active: true },
 ];
 
+/**
+ * Beacon-to-department assignments.
+ *
+ * Previously missing, which meant GET /beacons/assignments fell through to the
+ * `/beacons` branch of the demo interceptor and returned the beacon list — so
+ * the "Assigned Departments" column showed nonsense in every demo.
+ */
+export const DEMO_BEACON_ASSIGNMENTS = [
+  { id: 'ba1', beacon_id: 'b1', beacon_name: 'Science Lab 2', beacon_mac: 'AA:BB:CC:DD:EE:01', department_id: 1, department_name: 'School Of Science Engineering And Technology', created_at: '2026-07-01T08:00:00Z' },
+  { id: 'ba2', beacon_id: 'b2', beacon_name: 'Lecture Hall 4', beacon_mac: 'AA:BB:CC:DD:EE:02', department_id: 2, department_name: 'School Of Communication Languages And Performing Arts', created_at: '2026-07-01T08:05:00Z' },
+  { id: 'ba3', beacon_id: 'b3', beacon_name: 'Church Hall', beacon_mac: 'AA:BB:CC:DD:EE:03', department_id: 3, department_name: 'School Of Business And Economics', created_at: '2026-07-02T09:00:00Z' },
+];
+
 export const DEMO_DASHBOARD_METRICS = {
   total_employees: 7,
   present_today: 5,

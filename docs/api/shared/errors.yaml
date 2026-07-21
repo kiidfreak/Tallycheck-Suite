@@ -1,0 +1,84 @@
+# Error format, as emitted by libs/py_errors/errors.py::AppError.write_response.
+#
+# `details` is populated only in debug mode or on 422 — in production every other
+# status returns it as null. It is declared nullable here so a client that reads
+# it in development does not break in production.
+#
+# ErrorCode mirrors libs/py_errors/errors.py::ErrorCode. Keep them in step.
+
+components:
+  schemas:
+    ErrorCode:
+      type: string
+      enum:
+        - invalid_credentials
+        - account_not_approved
+        - account_inactive
+        - token_expired
+        - token_invalid
+        - insufficient_permissions
+        - already_clocked_in
+        - not_clocked_in
+        - attendance_record_not_found
+        - email_already_exists
+        - employee_not_found
+        - department_not_found
+        - department_has_employees
+        - validation_error
+        - internal_error
+        - not_found
+
+    ErrorResponse:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          $ref: '#/components/schemas/ErrorCode'
+        message:
+          type: string
+          description: Human-readable and safe to show a user.
+          example: You do not have permission to perform this action.
+        details:
+          type: string
+          nullable: true
+          description: >
+            Raw diagnostic detail. Returned only in debug mode or on 422;
+            null otherwise.
+
+  responses:
+    BadRequest:
+      description: Malformed or missing input.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Missing or invalid token.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Authenticated but not permitted, or not yet approved.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Resource does not exist in this tenant.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: Conflicts with current state.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    UnprocessableEntity:
+      description: Well-formed but semantically invalid.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

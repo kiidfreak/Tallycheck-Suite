@@ -1,0 +1,23 @@
+openapi: 3.0.3
+info:
+  title: TCheck Academic API
+  description: |
+    **STUB — not yet authored against a real service.**
+
+    The academic domain (Course, CourseEnrollment, Class, Attendance, School,
+    Major, Cohort, Level) is owned by `Tcheck-Backend` — Node/Express + Prisma,
+    single schema with `schoolId` row scoping, bcrypt auth. It is a separate
+    service by deliberate decision: its tenancy model (row-scoped) and auth
+    (bcrypt) are incompatible with this repo's (schema-per-tenant, Auth0), so
+    merging them is its own project.
+
+    Kept as a separate document rather than merged into `tcheck-corporate` because
+    the two collide: `/attendance` means corporate clock-in there and class
+    attendance here, and they run on different hosts with different auth.
+  version: 0.0.0
+
+servers:
+  - url: https://tcheck-backend.tallycheck.co.ke/api
+    description: Placeholder — not verified against a running service.
+
+paths: {}

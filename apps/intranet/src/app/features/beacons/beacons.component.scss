@@ -20,11 +20,11 @@
         margin: 0;
         font-size: 24px;
         font-weight: 600;
-        color: var(--text-main);
+        color: var(--text-primary);
       }
       p {
         margin: 4px 0 0;
-        color: var(--text-muted);
+        color: var(--text-tertiary);
         font-size: 14px;
       }
     }
@@ -41,21 +41,21 @@
       th, td {
         padding: 16px 24px;
         text-align: left;
-        border-bottom: 1px solid var(--border-color);
+        border-bottom: 1px solid var(--border-strong);
       }
 
       th {
         font-size: 12px;
         font-weight: 600;
         text-transform: uppercase;
-        color: var(--text-muted);
+        color: var(--text-tertiary);
         letter-spacing: 0.5px;
-        background: var(--bg-card);
+        background: var(--surface-base);
       }
 
       td {
         font-size: 14px;
-        color: var(--text-main);
+        color: var(--text-primary);
       }
 
       tr:last-child td {
@@ -65,12 +65,12 @@
       .empty-state {
         text-align: center;
         padding: 48px;
-        color: var(--text-muted);
+        color: var(--text-tertiary);
       }
 
       .hint {
         font-size: 12px;
-        color: var(--text-muted);
+        color: var(--text-tertiary);
         margin-top: 2px;
       }
     }
@@ -94,13 +94,13 @@
   border-radius: 12px;
   
   &.badge-success {
-    background-color: var(--success-100, #dcfce7);
-    color: var(--success-700, #15803d);
+    background-color: var(--success-tint, #dcfce7);
+    color: var(--success-strong, #15803d);
   }
 
   &.badge-danger {
-    background-color: var(--danger-100, #fee2e2);
-    color: var(--danger-700, #b91c1c);
+    background-color: var(--danger-tint, #fee2e2);
+    color: var(--danger-strong, #b91c1c);
   }
 }
 
@@ -117,10 +117,10 @@
     padding: 4px 10px;
     font-size: 12px;
     font-weight: 500;
-    background-color: var(--bg-hover, #f1f5f9);
-    border: 1px solid var(--border-color, #e2e8f0);
+    background-color: var(--surface-hover, #f1f5f9);
+    border: 1px solid var(--border-strong, #e2e8f0);
     border-radius: var(--radius-md, 6px);
-    color: var(--text-main);
+    color: var(--text-primary);
 
     .remove-assign {
       display: inline-flex;
@@ -129,22 +129,22 @@
       background: none;
       border: none;
       padding: 0;
-      color: var(--text-muted);
+      color: var(--text-tertiary);
       cursor: pointer;
       border-radius: 50%;
       width: 14px;
       height: 14px;
       
       &:hover {
-        background-color: var(--danger-100, #fee2e2);
-        color: var(--danger-700, #b91c1c);
+        background-color: var(--danger-tint, #fee2e2);
+        color: var(--danger-strong, #b91c1c);
       }
     }
   }
 }
 
 .text-danger {
-  color: var(--danger-700, #b91c1c) !important;
+  color: var(--danger-strong, #b91c1c) !important;
 }
 
 // Drawer styling
@@ -164,7 +164,7 @@
   right: 0;
   bottom: 0;
   width: 400px;
-  background: var(--bg-card);
+  background: var(--surface-base);
   box-shadow: -4px 0 24px rgba(0,0,0,0.1);
   z-index: 101;
   display: flex;
@@ -175,7 +175,7 @@
     justify-content: space-between;
     align-items: center;
     padding: 24px;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-strong);
 
     h2 {
       margin: 0;
@@ -186,7 +186,7 @@
       background: none;
       border: none;
       cursor: pointer;
-      color: var(--text-muted);
+      color: var(--text-tertiary);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -194,7 +194,7 @@
       border-radius: 4px;
 
       &:hover {
-        background: var(--bg-hover);
+        background: var(--surface-hover);
       }
     }
   }
@@ -224,7 +224,7 @@
       label {
         font-size: 13px;
         font-weight: 500;
-        color: var(--text-main);
+        color: var(--text-primary);
       }
 
       .text-area {
@@ -242,12 +242,12 @@
           cursor: pointer;
           font-size: 14px;
           font-weight: 500;
-          color: var(--text-main);
+          color: var(--text-primary);
           
           input {
             width: 16px;
             height: 16px;
-            accent-color: var(--primary-color);
+            accent-color: var(--primary);
           }
         }
       }
@@ -256,7 +256,7 @@
 
   .drawer-footer {
     padding: 16px 24px;
-    border-top: 1px solid var(--border-color);
+    border-top: 1px solid var(--border-strong);
     display: flex;
     justify-content: flex-end;
     gap: 12px;
@@ -282,7 +282,7 @@
   width: 90%;
   max-width: 440px;
   z-index: 201;
-  background: var(--bg-card);
+  background: var(--surface-base);
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
@@ -295,26 +295,26 @@
     justify-content: space-between;
     align-items: center;
     padding: 18px 24px;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-strong);
 
     h3 {
       margin: 0;
       font-size: 16px;
       font-weight: 600;
-      color: var(--text-main);
+      color: var(--text-primary);
     }
 
     .close-btn {
       background: none;
       border: none;
       cursor: pointer;
-      color: var(--text-muted);
+      color: var(--text-tertiary);
       padding: 4px;
       border-radius: 4px;
       display: flex;
 
       &:hover {
-        background: var(--bg-hover);
+        background: var(--surface-hover);
       }
     }
   }
@@ -328,7 +328,7 @@
     p {
       margin: 0;
       font-size: 14px;
-      color: var(--text-muted);
+      color: var(--text-tertiary);
       line-height: 1.5;
     }
 
@@ -340,17 +340,17 @@
       label {
         font-size: 13px;
         font-weight: 500;
-        color: var(--text-main);
+        color: var(--text-primary);
       }
     }
   }
 
   .dialog-footer {
     padding: 16px 24px;
-    border-top: 1px solid var(--border-color);
+    border-top: 1px solid var(--border-strong);
     display: flex;
     justify-content: flex-end;
     gap: 12px;
-    background-color: var(--bg-card);
+    background-color: var(--surface-base);
   }
 }

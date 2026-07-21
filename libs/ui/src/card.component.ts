@@ -32,8 +32,8 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
       .card {
         height: 100%;
         box-sizing: border-box;
-        background: var(--bg-surface);
-        border: 1px solid var(--border-1);
+        background: var(--surface-base);
+        border: 1px solid var(--border-light);
         border-radius: var(--radius-lg);
         box-shadow: var(--shadow-sm);
         padding: var(--space-6);
@@ -41,7 +41,7 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
         
         &:hover {
           box-shadow: var(--shadow-md);
-          border-color: var(--border-2);
+          border-color: var(--border-strong);
         }
       }
       .card-header {
@@ -54,12 +54,12 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
       .card-title {
         font-family: var(--font-display);
         font-weight: var(--fw-bold);
-        font-size: var(--fs-lg);
-        color: var(--fg-1);
+        font-size: var(--text-lg);
+        color: var(--text-primary);
       }
       .card-subtitle {
-        font-size: var(--fs-sm);
-        color: var(--fg-3);
+        font-size: var(--text-sm);
+        color: var(--text-tertiary);
         margin-top: 4px;
       }
     `,

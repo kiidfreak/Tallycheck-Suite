@@ -1,3 +1,5 @@
+@use 'theme/src/styles/breakpoints' as *;
+
 .header {
   height: var(--header-h);
   flex-shrink: 0;
@@ -5,11 +7,25 @@
   align-items: center;
   gap: var(--space-3);
   padding: 0 var(--space-6);
-  background: var(--bg-surface);
-  border-bottom: 1px solid var(--border-1);
+  background: var(--surface-base);
+  border-bottom: 1px solid var(--border-light);
   position: sticky;
   top: 0;
   z-index: 10;
+
+  @include tablet-down {
+    padding: 0 var(--space-4);
+    gap: var(--space-2);
+  }
+}
+
+// Drawer toggle: only meaningful where the sidebar is off-canvas.
+.nav-toggle {
+  display: none;
+
+  @include tablet-down {
+    display: inline-flex;
+  }
 }
 
 .search {
@@ -19,22 +35,22 @@
   width: 340px;
   max-width: 40vw;
   padding: 8px 12px;
-  background: var(--bg-sunken);
+  background: var(--surface-sunken);
   border: 1px solid transparent;
   border-radius: var(--radius-md);
-  color: var(--fg-3);
+  color: var(--text-tertiary);
 }
 .search input {
   border: none;
   background: transparent;
   outline: none;
   font-family: var(--font-body);
-  font-size: var(--fs-md);
-  color: var(--fg-1);
+  font-size: var(--text-md);
+  color: var(--text-primary);
   width: 100%;
 }
 .search:focus-within {
-  background: var(--bg-surface);
+  background: var(--surface-base);
   border-color: var(--border-focus);
   box-shadow: var(--shadow-focus);
 }
@@ -53,11 +69,17 @@
   border-radius: var(--radius-md);
   border: 1px solid transparent;
   background: transparent;
-  color: var(--fg-2);
+  color: var(--text-secondary);
   cursor: pointer;
 }
 .icon-btn:hover {
-  background: var(--bg-hover);
+  background: var(--surface-hover);
+}
+@include touch {
+  .icon-btn {
+    width: var(--tap-target);
+    height: var(--tap-target);
+  }
 }
 .icon-btn .ping {
   position: absolute;
@@ -66,8 +88,8 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--adept-red-600);
-  border: 2px solid var(--bg-surface);
+  background: var(--accent-600);
+  border: 2px solid var(--surface-base);
 }
 
 .user-chip {
@@ -85,16 +107,16 @@
   border-radius: 50%;
   font-family: var(--font-display);
   font-weight: var(--fw-semibold);
-  font-size: var(--fs-sm);
-  background: var(--adept-navy-100);
-  color: var(--adept-navy-700);
+  font-size: var(--text-sm);
+  background: var(--brand-100);
+  color: var(--brand-700);
 }
 .user-chip .avatar.success {
-  background: var(--success-100);
+  background: var(--success-tint);
   color: var(--success);
 }
 .user-chip .avatar.warning {
-  background: var(--warning-100);
+  background: var(--warning-tint);
   color: var(--warning);
 }
 .user-chip .avatar.purple {
@@ -105,15 +127,21 @@
   display: flex;
   flex-direction: column;
   line-height: 1.25;
+
+  // On phones the avatar alone identifies the user; the name/role pair is the
+  // first thing worth dropping to keep the header single-line.
+  @include phone {
+    display: none;
+  }
 }
 .user-meta .name {
   font-weight: var(--fw-semibold);
-  font-size: var(--fs-sm);
-  color: var(--fg-1);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
 }
 .user-meta .role {
-  font-size: var(--fs-xs);
-  color: var(--fg-3);
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
 }
 
 /* local copy of the btn-danger primitive for the logout button */
@@ -129,12 +157,22 @@
 }
 .btn-sm {
   padding: 6px 12px;
-  font-size: var(--fs-sm);
+  font-size: var(--text-sm);
 }
 .btn-danger {
-  background: var(--adept-red-600);
-  color: var(--fg-on-red);
+  background: var(--accent-600);
+  color: var(--text-on-accent);
 }
 .btn-danger:hover {
-  background: var(--adept-red-700);
+  background: var(--accent-700);
+}
+
+// Collapse Logout to its icon on phones; the title attribute carries the label.
+@include phone {
+  .btn .btn-label {
+    display: none;
+  }
+  .btn-sm {
+    padding: 8px 10px;
+  }
 }

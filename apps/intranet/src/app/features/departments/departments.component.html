@@ -24,7 +24,7 @@
         @for (dept of filtered_departments(); track dept.id) {
           <tr>
             <td>
-              <strong style="color: var(--fg-1); font-size: 14px;">
+              <strong style="color: var(--text-primary); font-size: 14px;">
                 {{ format_name(dept.name) }}
               </strong>
             </td>
@@ -36,7 +36,7 @@
             <td>{{ dept.parent_department_name ? format_name(dept.parent_department_name) : '—' }}</td>
             <td>{{ dept.manager_name || '—' }}</td>
             <td>
-              <strong style="color: var(--fg-brand);">{{ dept.employee_count }}</strong>
+              <strong style="color: var(--text-brand);">{{ dept.employee_count }}</strong>
             </td>
             @if (auth.can('edit:departments')) {
               <td style="text-align: right;">

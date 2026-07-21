@@ -84,6 +84,18 @@ export const appRoutes: Route[] = [
         canActivate: [roleGuard],
         data: { id: 'reports', title: 'Overall Reports', icon: 'chart-column' },
       },
+      {
+        path: 'safechild-reports',
+        loadComponent: () => import('./features/reports/reports.component').then((m) => m.ReportsComponent),
+        canActivate: [roleGuard],
+        data: { id: 'safechild-reports', title: 'Sunday School Child Attendance Reports', icon: 'chart-column', type: 'safechild' },
+      },
+      {
+        path: 'users-roles',
+        loadComponent: () => import('./features/employees/employees.component').then((m) => m.EmployeesComponent),
+        canActivate: [roleGuard],
+        data: { id: 'users-roles', title: 'Users & Roles', icon: 'user-cog' },
+      },
       placeholder('settings', 'settings', 'Settings', 'settings'),
       placeholder('audit', 'audit', 'Audit Log', 'shield'),
       {

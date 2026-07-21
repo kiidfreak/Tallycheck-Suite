@@ -1,5 +1,7 @@
 from typing import Any, Optional
 
+from schemas.zones import ZoneRefSchema
+
 class BleBeaconSchema:
     @staticmethod
     def serialize(beacon: Any) -> Optional[dict[str, Any]]:
@@ -12,6 +14,10 @@ class BleBeaconSchema:
             "uuid": beacon.uuid,
             "major": beacon.major,
             "minor": beacon.minor,
+            # Structured placement. `location` stays as the legacy free-text
+            # fallback for rows the zone backfill could not match.
+            "zone_id": getattr(beacon, 'zone_id', None),
+            "zone": ZoneRefSchema.serialize(getattr(beacon, 'zone', None)),
             "location": beacon.location,
             "description": beacon.description,
             "is_active": beacon.is_active,

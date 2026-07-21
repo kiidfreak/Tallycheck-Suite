@@ -1,7 +1,7 @@
 from typing import Tuple
 import uuid
 from flask import Blueprint, request, Response
-from models import db, BleBeacon, BeaconAssignment, Department
+from models import db, BleBeacon, BeaconAssignment, Department, Zone
 from helpers.auth_helper import require_auth, roles_required, ADMIN_ROLES
 from py_errors import ValidationError, NotFoundError
 from py_success import SuccessResponse
@@ -32,6 +32,7 @@ def create_beacon() -> Tuple[Response, int]:
     major = data.get('major', 1)
     minor = data.get('minor', 1)
     location = data.get('location')
+    zone_id = data.get('zone_id')
     description = data.get('description')
     is_active = data.get('is_active', True)
 
@@ -43,6 +44,9 @@ def create_beacon() -> Tuple[Response, int]:
     if existing:
         raise ValidationError(details=f"Beacon with MAC address {mac_address} already exists")
 
+    if zone_id is not None and not db.session.get(Zone, zone_id):
+        raise ValidationError(details="Zone not found.")
+
     new_beacon = BleBeacon(
         name=name,
         mac_address=mac_address,
@@ -50,6 +54,7 @@ def create_beacon() -> Tuple[Response, int]:
         major=major,
         minor=minor,
         location=location,
+        zone_id=zone_id,
         description=description,
         is_active=is_active
     )
@@ -91,6 +96,12 @@ def update_beacon(beacon_id: uuid.UUID) -> Tuple[Response, int]:
         beacon.minor = data['minor']
     if 'location' in data:
         beacon.location = data['location']
+    if 'zone_id' in data:
+        new_zone_id = data['zone_id']
+        # null is meaningful: it un-places a beacon without deleting it.
+        if new_zone_id is not None and not db.session.get(Zone, new_zone_id):
+            raise ValidationError(details="Zone not found.")
+        beacon.zone_id = new_zone_id
     if 'description' in data:
         beacon.description = data['description']
     if 'is_active' in data:

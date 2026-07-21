@@ -8,6 +8,7 @@ from models import db, Employee, Department, AttendanceRecord
 from auth_routes import require_auth, roles_required, ADMIN_ROLES
 from py_errors import ValidationError, NotFoundError
 from schemas.reports import ReportSchema
+from helpers.report_queries import dashboard_kpis
 from py_success import SuccessResponse
 
 report_bp: Blueprint = Blueprint('reports', __name__, url_prefix='/reports')
@@ -20,53 +21,14 @@ report_bp: Blueprint = Blueprint('reports', __name__, url_prefix='/reports')
 @require_auth
 @roles_required(*ADMIN_ROLES)
 def get_dashboard() -> tuple[Response, int]:
-    """HR Dashboard KPIs"""
-    today: date = date.today()
-    
-    # Base query for assigned, active employees
-    total_headcount: int = Employee.query.filter(
-        Employee.is_active == True,
-        Employee.department_id.isnot(None)
-    ).count()
-    
-    today_records: list[AttendanceRecord] = AttendanceRecord.query.join(
-        Employee, AttendanceRecord.employee_id == Employee.id
-    ).filter(
-        AttendanceRecord.work_date == today,
-        Employee.is_active == True,
-        Employee.department_id.isnot(None)
-    ).all()
-    present_today: int = len(set(r.employee_id for r in today_records))
-    currently_clocked_in: int = sum(1 for r in today_records if r.clock_out is None)
-    absent_today: int = total_headcount - present_today if total_headcount > present_today else 0
-    
-    attendance_rate: float = 0.0
-    if total_headcount > 0:
-        attendance_rate = round((present_today / total_headcount) * 100, 2)
+    """HR Dashboard KPIs for the current tenant.
 
-    late_arrivals: int = 0
-    remote_today: int = 0
-    
-    for r in today_records:
-        if r.clock_in and r.clock_in.hour >= 8 and r.clock_in.minute > 0:
-            late_arrivals += 1
-        if r.source == 'remote' or (r.notes and '[Remote]' in r.notes):
-            remote_today += 1
-
-    pending_corrections = Employee.query.filter_by(is_approved=False).count()
-
+    The query itself lives in helpers/report_queries.dashboard_kpis so the
+    platform layer can run the identical logic against a switched schema.
+    """
     return SuccessResponse(
         message="Dashboard data retrieved",
-        data={
-            "total_headcount": total_headcount,
-            "present_today": present_today,
-            "absent_today": absent_today,
-            "currently_clocked_in": currently_clocked_in,
-            "attendance_rate_today": attendance_rate,
-            "late_arrivals": late_arrivals,
-            "remote_today": remote_today,
-            "pending_corrections": pending_corrections
-        },
+        data=dashboard_kpis(),
         status_code=200
     ).write_response()
 

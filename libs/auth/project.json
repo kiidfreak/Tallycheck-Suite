@@ -1,0 +1,20 @@
+{
+  "name": "auth",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "libs/auth/src",
+  "prefix": "omni",
+  "tags": ["scope:shared", "type:data-access"],
+  "targets": {
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/libs/auth"],
+      "options": {
+        "jestConfig": "libs/auth/jest.config.ts"
+      }
+    }
+  }
+}

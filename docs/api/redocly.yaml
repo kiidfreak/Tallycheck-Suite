@@ -1,0 +1,32 @@
+# Redocly config — linting and bundling for the TallyCheck service contracts.
+#
+# Bundling matters for two consumers: SwaggerHub cannot resolve local $refs into
+# shared/, and orval reads a single document per input. Both take the bundled
+# output, never these source files directly.
+
+apis:
+  tcheck-corporate:
+    root: ./tcheck-corporate.openapi.yaml
+  tcheck-academic:
+    root: ./tcheck-academic.openapi.yaml
+  vcheck:
+    root: ./vcheck.openapi.yaml
+
+extends:
+  - recommended
+
+rules:
+  # Descriptions are enforced where they carry meaning, not everywhere — blanket
+  # description rules produce filler text, which is worse than none.
+  operation-summary: error
+  operation-operationId: warn
+  no-unresolved-refs: error
+  no-unused-components: warn
+  security-defined: error
+
+  # The stubs legitimately have no paths yet.
+  spec-strict-refs: off
+  info-license: off
+  operation-4xx-response: warn
+  no-ambiguous-paths: error
+  path-declaration-must-exist: error

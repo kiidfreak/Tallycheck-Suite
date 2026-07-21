@@ -1,0 +1,3250 @@
+openapi: 3.0.3
+info:
+  title: TallyCheck Corporate API
+  description: |
+    Corporate attendance, SafeChild pickup, BLE beacons and tenant settings.
+
+    This is one of several TallyCheck service contracts. It does **not** cover the
+    academic domain (courses, cohorts, enrolment) — that lives in `Tcheck-Backend`
+    and is described by `tcheck-academic.openapi.yaml`. Visitor management lives in
+    `vcheck.openapi.yaml`. The three are separate documents on purpose: they run on
+    different hosts, use different auth, and have colliding paths (`/attendance`
+    means corporate clock-in here and class attendance in the academic service).
+
+    ## Multi-tenancy
+    Every request resolves to exactly one tenant schema before any handler runs.
+    See `shared/tenancy.yaml`. Callers holding a token send nothing extra — the
+    token carries the tenant.
+
+    ## Roles
+    Roles are enumerated once, in `shared/primitives.yaml#/components/schemas/RoleKey`,
+    and must match `libs/auth/src/roles.ts` and `backend/helpers/auth_helper.py`.
+    Some tenants still carry the legacy names `hr` and `manager`; the backend
+    guards accept both.
+
+    ## Authentication
+    All endpoints except `GET /health` and
+    `GET /auth/organization-by-subdomain/{subdomain}` require a Bearer JWT.
+
+    ## Response shape
+    Successful responses are enveloped as `{ "message": ..., "data": ... }`, with
+    `meta` added on paginated collections. See `shared/envelope.yaml`.
+  version: 2.1.0
+
+servers:
+  - url: http://127.0.0.1:8001/api/v2
+    description: Local development
+  - url: https://api.tallycheck.co.ke/api/v2
+    description: Production
+
+tags:
+  - name: Health
+    description: Service liveness check
+  - name: Auth
+    description: Registration, sign-in, profile, tenant resolution, user approval
+  - name: Attendance
+    description: Clock-in/out and personal attendance history
+  - name: HR - Employees
+    description: Employee CRUD operations (HR/Admin only)
+  - name: HR - Departments
+    description: Department CRUD operations (HR/Admin only)
+  - name: HR - Attendance
+    description: Team views and attendance corrections (Manager/HR)
+  - name: Reports
+    description: Aggregated attendance reporting and CSV export
+  - name: Beacons
+    description: BLE beacon inventory and department assignment
+  - name: Zones
+    description: Indoor locations — rooms, bays, gates — that beacons are placed in
+  - name: SafeChild
+    description: Sunday-school drop-off and guardian-verified pickup
+  - name: Settings
+    description: Tenant attendance defaults and per-employee overrides
+  - name: Platform
+    description: Cross-tenant super-admin surface — platform totals and per-org drill-down
+
+# ==========================================================
+# GLOBAL SECURITY. Applies to every endpoint. To overwrite
+# include "security: []" in that endpoint
+# ==========================================================
+security:
+  - Auth0: []
+
+# ==========================================================
+# REUSABLE STRUCTURES
+# ==========================================================
+components:
+  securitySchemes:
+    Auth0:
+      type: openIdConnect
+      # Must match the tenant configured in apps/intranet/src/app/app.config.ts.
+      # This previously named a different tenant than the app actually used.
+      openIdConnectUrl: https://dev-x506paw8afbw6jgu.us.auth0.com/.well-known/openid-configuration
+
+  # ==========================================================
+  # REUSABLE SCHEMAS
+  # ==========================================================
+  schemas:
+    # Errors and pagination are defined once in shared/ and reused by every
+    # service spec, so one generated type serves all of them. Do not inline a
+    # second copy here — that is how the error vocabulary drifted before.
+    ErrorCode:
+      $ref: './shared/errors.yaml#/components/schemas/ErrorCode'
+
+    ErrorResponse:
+      $ref: './shared/errors.yaml#/components/schemas/ErrorResponse'
+
+    PaginationMeta:
+      $ref: './shared/envelope.yaml#/components/schemas/Meta'
+
+    RoleKey:
+      $ref: './shared/primitives.yaml#/components/schemas/RoleKey'
+
+    # ==========================================================
+    # AUTH
+    # ==========================================================
+    RegisterRequest:
+      type: object
+      description: Onboards an already-authenticated Auth0 user. All fields are optional with server-side fallbacks.
+      properties:
+        first_name:
+          type: string
+          example: "Philomena"
+        last_name:
+          type: string
+          example: "Shirandula"
+        email:
+          type: string
+          format: email
+          example: "philomena.shirandula@adept-techno.com"
+
+    AuthTokens:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        expires_in:
+          type: integer
+          description: Seconds until the access token expires
+          example: 86400
+        token_type:
+          type: string
+          example: "Bearer"
+
+    CurrentUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 12
+        email:
+          type: string
+          example: "philomena.shirandula@adept-techno.com"
+        first_name:
+          type: string
+          example: "Philomena"
+        last_name:
+          type: string
+          example: "Shirandula"
+        role_id:
+          type: integer
+          example: 1
+        role_name:
+          $ref: './shared/primitives.yaml#/components/schemas/RoleName'
+        is_approved:
+          type: boolean
+          example: true
+        is_internal:
+          type: boolean
+          example: false
+        standard_shift:
+          type: string
+          enum: [morning, afternoon]
+          example: "morning"
+        is_manager:
+          type: boolean
+          example: false
+        department_id:
+          type: integer
+          example: 3
+        department_name:
+          type: string
+          nullable: true
+          example: "software_development"
+
+    # ==========================================================
+    # ATTENDANCE
+    # ==========================================================
+    AttendanceRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 101
+        employee_id:
+          type: integer
+          example: 12
+        clock_in:
+          type: string
+          format: date-time
+          example: "2026-06-10T08:02:11Z"
+        clock_out:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2026-06-10T17:05:44Z"
+        work_date:
+          type: string
+          format: date
+          example: "2026-06-10"
+        worked_hours:
+          type: number
+          format: float
+          nullable: true
+          example: 9.06
+        source:
+          type: string
+          example: "web"
+        status:
+          type: string
+          enum: [open, closed, corrected]
+          example: "closed"
+        notes:
+          type: string
+          nullable: true
+          example: null
+        edited_by:
+          type: integer
+          nullable: true
+          description: "Employee ID of the HR/Admin who last edited this record"
+
+    ClockInResponse:
+      type: object
+      properties:
+        record:
+          $ref: "#/components/schemas/AttendanceRecord"
+        message:
+          type: string
+          example: "Clocked in at 08:02 UTC"
+
+    ClockOutResponse:
+      type: object
+      properties:
+        record:
+          $ref: "#/components/schemas/AttendanceRecord"
+        message:
+          type: string
+          example: "Clocked out. Worked 9.06 hours."
+
+    AttendanceListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/AttendanceRecord"
+        meta:
+          $ref: "#/components/schemas/PaginationMeta"
+
+    AttendanceCorrectionRequest:
+      type: object
+      required: [reason]
+      properties:
+        clock_in:
+          type: string
+          format: date-time
+          example: "2026-06-10T08:00:00Z"
+        clock_out:
+          type: string
+          format: date-time
+          example: "2026-06-10T17:00:00Z"
+        notes:
+          type: string
+          example: "Employee forgot to clock out."
+        reason:
+          type: string
+          description: "Mandatory audit reason for any correction"
+          example: "Clock-out was missed due to system downtime."
+
+    AttendanceManualRequest:
+      type: object
+      required: [employee_id, work_date, clock_in, clock_out, reason]
+      description: Manually create and attendance tackle on behalf of an employee
+      properties:
+        employee_id:
+          type: integer
+          example: 12
+        work_date:
+          type: string
+          format: date
+          example: "2026-06-09"
+        clock_in:
+          type: string
+          format: date-time
+          example: "2026-06-09T08:00:00Z"
+        clock_out:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2026-06-09T17:00:00Z"
+        reason:
+          type: string
+          example: "Employee worked on-site without system access."
+
+    # ==========================================================
+    # EMPLOYEE
+    # ==========================================================
+    Employee:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 12
+        email:
+          type: string
+          example: "philomena.shirandula@adept-techno.com"
+        first_name:
+          type: string
+          example: "John"
+        last_name:
+          type: string
+          example: "Doe"
+        role_id:
+          type: integer
+          example: 1
+        role_name:
+          $ref: './shared/primitives.yaml#/components/schemas/RoleName'
+        department_id:
+          type: integer
+          nullable: true
+          example: 3
+        department_name:
+          type: string
+          nullable: true
+          example: "software_development"
+        is_active:
+          type: boolean
+          example: true
+        is_approved:
+          type: boolean
+          example: true
+        is_manager:
+          type: boolean
+          example: false
+        hire_date:
+          type: string
+          format: date
+          nullable: true
+          example: "2025-03-01"
+        created_at:
+          type: string
+          format: date-time
+        standard_shift:
+          type: string
+          enum: [morning, afternoon]
+          example: "morning"
+        shift_type:
+          type: string
+          enum: [standard, extended]
+          example: "extended"
+        shift_hours:
+          type: string
+          enum: ["7am-5pm", "9am-7pm", "7am-430pm", "9am-630pm", "custom"]
+          example: "9am-7pm"
+        shift_duration_hours:
+          type: number
+          format: float
+          example: 9.5
+        custom_shift_start:
+          type: string
+          nullable: true
+          example: "08:00"
+        custom_shift_end:
+          type: string
+          nullable: true
+          example: "17:30"
+
+    EmployeeCreateRequest:
+      type: object
+      required: [first_name, last_name, email, department, role]
+      properties:
+        first_name:
+          type: string
+          example: "Chieth"
+        last_name:
+          type: string
+          example: "Maduong"
+        email:
+          type: string
+          format: email
+          example: "chieth.maduong@adept-techno.com"
+        role_id:
+          type: integer
+          nullable: true
+          example: 1
+        department_id:
+          type: integer
+          nullable: true
+          example: 2
+        hire_date:
+          type: string
+          format: date
+          example: "2026-06-10"
+        is_manager:
+          type: boolean
+          default: false
+        is_internal:
+          type: boolean
+          default: true
+        is_approved:
+          type: boolean
+          default: false
+        shift_type:
+          type: string
+          enum: [standard, extended]
+          example: "standard"
+        shift_hours:
+          type: string
+          enum: ["7am-5pm", "9am-7pm", "7am-430pm", "9am-630pm", "custom"]
+          example: "7am-5pm"
+        custom_shift_start:
+          type: string
+          nullable: true
+          example: "08:00"
+        custom_shift_end:
+          type: string
+          nullable: true
+          example: "18:00"
+
+    EmployeeUpdateRequest:
+      type: object
+      properties:
+        first_name:
+          type: string
+        last_name:
+          type: string
+        role_id:
+          type: integer
+          example: 2
+        department_id:
+          type: integer
+          nullable: true
+        is_manager:
+          type: boolean
+        is_active:
+          type: boolean
+        is_approved:
+          type: boolean
+        hire_date:
+          type: string
+          format: date
+        shift_type:
+          type: string
+          enum: [standard, extended]
+        shift_hours:
+          type: string
+          enum: ["7am-5pm", "9am-7pm", "7am-430pm", "9am-630pm", "custom"]
+        custom_shift_start:
+          type: string
+          nullable: true
+        custom_shift_end:
+          type: string
+          nullable: true
+
+    # ==========================================================
+    # DEPARTMENT
+    # ==========================================================
+    Department:
+      type: object
+      description: >
+        A node in the tenant org tree. Despite the name this covers every level —
+        regions, sites, divisions, departments, teams — discriminated by
+        `unit_type`.
+      properties:
+        id:
+          type: integer
+          example: 3
+        name:
+          type: string
+          description: >
+            Display text. `display_name` when one was set, otherwise the slug
+            prettified. Prefer this for rendering.
+          example: "Software Development"
+        slug:
+          type: string
+          description: >
+            Stored identifier, and the uniqueness key. Unique among siblings, not
+            tenant-wide, so two sites may each have a "reception".
+          example: "software_development"
+        display_name:
+          type: string
+          nullable: true
+          description: >
+            Human-authored label. Exists because the slug round-trip is lossy —
+            "iOS Team" stores as "ios_team" and reads back as "Ios Team".
+          example: "Software Development"
+        unit_type:
+          $ref: "#/components/schemas/UnitType"
+        manager_id:
+          type: integer
+          nullable: true
+          example: 7
+        manager_name:
+          type: string
+          nullable: true
+          example: "Barack Osama"
+        employee_count:
+          type: integer
+          example: 12
+        child_count:
+          type: integer
+          description: Immediate children only, not the whole subtree.
+          example: 4
+        parent_department_id:
+          type: integer
+          nullable: true
+          example: 1
+        parent_department_name:
+          type: string
+          nullable: true
+          example: "Executive"
+
+    DepartmentRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          description: Slugified server-side (lowercased, spaces to underscores).
+          example: "finance"
+        display_name:
+          type: string
+          nullable: true
+          description: Optional human-authored label, stored verbatim.
+          example: "Finance"
+        unit_type:
+          $ref: "#/components/schemas/UnitType"
+        manager_id:
+          type: integer
+          nullable: true
+          example: 7
+        parent_department_id:
+          type: integer
+          nullable: true
+          description: >
+            Rejected if it does not exist, sits inside this unit's own subtree
+            (which would create a loop), or would nest the tree beyond 6 levels.
+          example: 2
+
+    # ==========================================================
+    # ORGANIZATIONS (MULTI-TENANCY)
+    # ==========================================================
+    Organization:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "org_0D0uiOBBi91ZiW0v"
+        name:
+          type: string
+          example: "Daystar University"
+        domain:
+          type: string
+          example: "daystar"
+        schema_name:
+          type: string
+          example: "tenant_org_0d0uiobbi91ziw0v"
+        is_active:
+          type: boolean
+          example: true
+        org_type:
+          type: string
+          enum: [corporate, education]
+          example: "education"
+        admin_email:
+          type: string
+          example: "anne@daystar.ac.ke"
+
+    CreateOrganizationPayload:
+      type: object
+      required: [name, domain, org_type, admin_email]
+      properties:
+        name:
+          type: string
+          example: "Acme Corporation"
+        domain:
+          type: string
+          example: "acme"
+        org_type:
+          type: string
+          enum: [corporate, education]
+          example: "corporate"
+        admin_email:
+          type: string
+          example: "admin@acme.com"
+
+    # ==========================================================
+    # REPORTS
+    # ==========================================================
+    ReportEmployeeAttendance:
+      type: object
+      properties:
+        employee_id:
+          type: integer
+          example: 12
+        employee_name:
+          type: string
+          example: "Nyambane Mogaka"
+        department:
+          type: string
+          example: "software_development"
+        total_days_present:
+          type: integer
+          example: 18
+        total_days_absent:
+          type: integer
+          example: 2
+        total_hours_worked:
+          type: number
+          format: float
+          example: 162.5
+        avg_clock_in:
+          type: string
+          example: "08:07"
+        avg_clock_out:
+          type: string
+          example: "17:23"
+        late_days:
+          type: integer
+          example: 3
+
+    ReportDepartmentAttendance:
+      type: object
+      properties:
+        department_id:
+          type: integer
+          example: 2
+        department_name:
+          type: string
+          example: "Software Development"
+        date_from:
+          type: string
+          format: date
+        date_to:
+          type: string
+          format: date
+        total_employees:
+          type: integer
+          example: 4
+        avg_attendance_rate:
+          type: number
+          format: float
+          description: "Percentage 0–100"
+          example: 94.5
+        total_hours_worked:
+          type: number
+          format: float
+          example: 640.5
+        employees:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReportEmployeeAttendance"
+
+    AuditLogEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        attendance_id:
+          type: integer
+          example: 4
+        changed_by:
+          type: integer
+          description: "Employee ID of the editor"
+          example: 7
+        changed_at:
+          type: string
+          format: date-time
+          example: "2026-06-10T11:13:00Z"
+        reason:
+          type: string
+          example: "Employee wasn't able to clock-in in the morning"
+        previous_clock_in:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2026-06-10T11:13:00Z"
+        previous_clock_out:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2026-06-10T11:13:00Z"
+
+  # ==========================================================
+  # REUSABLE RESPONSES
+  # ==========================================================
+
+    # ==========================================================
+    # TENANT / REFERENCE DATA
+    # ==========================================================
+    OrganizationSummary:
+      type: object
+      description: >
+        Public tenant lookup result. Deliberately narrower than the Organization
+        record — `schema_name` is internal and is never exposed pre-auth.
+      properties:
+        id:
+          type: string
+          description: Auth0 organization id.
+          example: org_0D0uiOBBi91ZiW0v
+        name:
+          type: string
+          example: Daystar University
+        domain:
+          type: string
+          example: daystar
+        is_active:
+          type: boolean
+
+    RoleSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          $ref: "#/components/schemas/RoleKey"
+
+    # ==========================================================
+    # ATTENDANCE — personal stats
+    # ==========================================================
+    AttendanceStats:
+      type: object
+      properties:
+        hours_this_week:
+          type: number
+          format: float
+          description: Monday-to-now, UTC. Counts an open session up to the current time.
+          example: 27.4
+        team_total:
+          type: integer
+          example: 12
+        team_present:
+          type: integer
+          example: 9
+        streak:
+          type: integer
+          description: Consecutive days with a recorded clock-in.
+          example: 4
+
+    # ==========================================================
+    # REPORTS
+    # ==========================================================
+    TimelineEntry:
+      type: object
+      properties:
+        employee_id:
+          $ref: './shared/primitives.yaml#/components/schemas/Uuid'
+        first_name:
+          type: string
+        last_name:
+          type: string
+        initials:
+          type: string
+          example: JM
+        department:
+          type: string
+          description: Falls back to "Unassigned".
+          example: software_development
+        records:
+          type: array
+          items:
+            type: object
+            properties:
+              clock_in:
+                type: string
+                format: date-time
+                nullable: true
+              clock_out:
+                type: string
+                format: date-time
+                nullable: true
+              status:
+                type: string
+              notes:
+                type: string
+                nullable: true
+
+    TrendPoint:
+      type: object
+      properties:
+        date:
+          $ref: './shared/primitives.yaml#/components/schemas/IsoDate'
+        total_hours:
+          type: number
+          format: float
+          description: Rounded to 2dp. Zero for days with no completed sessions.
+          example: 76.25
+
+    # ==========================================================
+    # BEACONS
+    # ==========================================================
+    Beacon:
+      type: object
+      properties:
+        id:
+          $ref: './shared/primitives.yaml#/components/schemas/Uuid'
+        name:
+          type: string
+          nullable: true
+          example: Hekima Classroom Beacon
+        mac_address:
+          type: string
+          description: Unique per tenant. The beacon identity.
+          example: AC:23:45:67:89:01
+        uuid:
+          type: string
+          nullable: true
+          description: iBeacon proximity UUID.
+        major:
+          type: integer
+          default: 1
+        minor:
+          type: integer
+          default: 1
+        zone_id:
+          type: integer
+          nullable: true
+          description: Where the beacon is physically mounted.
+        zone:
+          # Null when the beacon has not been placed. OpenAPI 3.0 ignores a
+          # `nullable` sibling next to `$ref`, so it is stated here instead.
+          $ref: "#/components/schemas/ZoneRef"
+        location:
+          type: string
+          nullable: true
+          description: >
+            Legacy free-text placement label, superseded by `zone`. Retained as a
+            display fallback for rows the zone backfill could not match.
+          example: Main Entrance
+        description:
+          type: string
+          nullable: true
+        is_active:
+          type: boolean
+        created_at:
+          $ref: './shared/primitives.yaml#/components/schemas/Timestamp'
+        updated_at:
+          $ref: './shared/primitives.yaml#/components/schemas/Timestamp'
+
+    BeaconRequest:
+      type: object
+      required: [mac_address]
+      properties:
+        name:
+          type: string
+        mac_address:
+          type: string
+          example: AC:23:45:67:89:01
+        uuid:
+          type: string
+        major:
+          type: integer
+          default: 1
+        minor:
+          type: integer
+          default: 1
+        zone_id:
+          type: integer
+          nullable: true
+        location:
+          type: string
+        description:
+          type: string
+        is_active:
+          type: boolean
+          default: true
+
+    BeaconUpdateRequest:
+      type: object
+      description: Partial update — omitted fields are left unchanged.
+      properties:
+        name:
+          type: string
+        mac_address:
+          type: string
+        uuid:
+          type: string
+        major:
+          type: integer
+        minor:
+          type: integer
+        zone_id:
+          type: integer
+          nullable: true
+        location:
+          type: string
+        description:
+          type: string
+        is_active:
+          type: boolean
+
+    BeaconAssignment:
+      type: object
+      properties:
+        id:
+          $ref: './shared/primitives.yaml#/components/schemas/Uuid'
+        beacon_id:
+          $ref: './shared/primitives.yaml#/components/schemas/Uuid'
+        beacon_name:
+          type: string
+          nullable: true
+        beacon_mac:
+          type: string
+          nullable: true
+        department_id:
+          type: integer
+          nullable: true
+        department_name:
+          type: string
+          nullable: true
+          description: Prettified from the stored slug.
+          example: Software Development
+        created_at:
+          $ref: './shared/primitives.yaml#/components/schemas/Timestamp'
+
+    # ==========================================================
+    # SAFECHILD
+    # ==========================================================
+    SundaySchoolClass:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+          example: Hekima Class (3-5 yrs)
+        description:
+          type: string
+          nullable: true
+        child_count:
+          type: integer
+          description: Active children currently assigned to this class.
+
+    Guardian:
+      type: object
+      properties:
+        id:
+          $ref: './shared/primitives.yaml#/components/schemas/Uuid'
+        name:
+          type: string
+        phone:
+          type: string
+        relation:
+          type: string
+          example: Mother
+        is_primary:
+          type: boolean
+        photo_url:
+          type: string
+          nullable: true
+
+    Child:
+      type: object
+      properties:
+        id:
+          $ref: './shared/primitives.yaml#/components/schemas/Uuid'
+        name:
+          type: string
+        group_name:
+          type: string
+          description: Legacy free-text class label, retained for display.
+        photo_url:
+          type: string
+          nullable: true
+        is_active:
+          type: boolean
+        guardians:
+          type: array
+          items:
+            $ref: "#/components/schemas/Guardian"
+        status:
+          type: string
+          nullable: true
+          enum: [checked_in, absent, released, picked_up]
+        check_in_time:
+          type: string
+          format: date-time
+          nullable: true
+
+    DropOffResult:
+      type: object
+      properties:
+        token_id:
+          $ref: './shared/primitives.yaml#/components/schemas/Uuid'
+        child_name:
+          type: string
+        pin:
+          type: string
+          description: >
+            Four digits. Returned exactly once, at issue time — it is not
+            retrievable afterwards, so the caller must surface it immediately.
+          example: "5842"
+        qr_payload:
+          type: string
+          description: Opaque single-use string encoded into the QR ticket.
+        expires_at:
+          $ref: './shared/primitives.yaml#/components/schemas/Timestamp'
+
+    PickupVerification:
+      type: object
+      properties:
+        child_name:
+          type: string
+        child_photo:
+          type: string
+          nullable: true
+        guardian_name:
+          type: string
+          description: Falls back to "Authorized Guardian" when the token carries no guardian.
+        guardian_relation:
+          type: string
+          nullable: true
+        verified_at:
+          $ref: './shared/primitives.yaml#/components/schemas/Timestamp'
+
+    ClassHistoryEntry:
+      type: object
+      properties:
+        id:
+          $ref: './shared/primitives.yaml#/components/schemas/Uuid'
+        child_id:
+          $ref: './shared/primitives.yaml#/components/schemas/Uuid'
+        child_name:
+          type: string
+          nullable: true
+        class_name:
+          type: string
+          nullable: true
+        guardian_name:
+          type: string
+          nullable: true
+        dropped_off_at:
+          type: string
+          format: date-time
+          nullable: true
+        picked_up_at:
+          type: string
+          format: date-time
+          nullable: true
+        status:
+          type: string
+          example: pending
+
+    # ==========================================================
+    # SETTINGS
+    # ==========================================================
+    OrgSettings:
+      type: object
+      description: >
+        Tenant-wide attendance defaults. Exactly one row per tenant. Where an
+        employee carries a manager-set override, the override wins.
+      properties:
+        checkin_cutoff_hours_after_start:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: Hours after shift start when clock-in closes.
+          example: 5
+        reminder_enabled:
+          type: boolean
+        reminder_minutes_before_cutoff:
+          type: integer
+          minimum: 5
+          maximum: 240
+          example: 30
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_by:
+          type: string
+          format: uuid
+          nullable: true
+
+    OrgSettingsUpdate:
+      type: object
+      description: Partial update — omitted fields are left unchanged.
+      properties:
+        checkin_cutoff_hours_after_start:
+          type: integer
+          minimum: 1
+          maximum: 10
+        reminder_enabled:
+          type: boolean
+        reminder_minutes_before_cutoff:
+          type: integer
+          minimum: 5
+          maximum: 240
+
+    EmployeeCutoff:
+      type: object
+      properties:
+        employee_id:
+          $ref: './shared/primitives.yaml#/components/schemas/Uuid'
+        checkin_cutoff_hour:
+          type: integer
+          nullable: true
+          description: The override itself. Null means none is set.
+        effective_cutoff_hour:
+          type: integer
+          description: What actually applies, after falling back to the tenant default.
+        using_tenant_default:
+          type: boolean
+
+
+    # ==========================================================
+    # ORG TREE
+    # ==========================================================
+    UnitType:
+      type: string
+      description: |
+        Structural level in the org tree — deliberately NOT a vertical noun.
+
+        `site` covers campus, branch, depot, facility and store; the
+        customer-facing word is a display concern the frontend maps per
+        organization type. Adding `campus`/`depot`/`ward` here would make every
+        new customer a schema change, and the enum would grow without end.
+      enum:
+        - root
+        - region
+        - site
+        - division
+        - department
+        - team
+      default: department
+
+    DepartmentTreeNode:
+      allOf:
+        - $ref: "#/components/schemas/Department"
+        - type: object
+          properties:
+            children:
+              type: array
+              description: Nested child units. Empty for a leaf.
+              items:
+                $ref: "#/components/schemas/DepartmentTreeNode"
+
+
+    # ==========================================================
+    # ZONES (indoor location)
+    # ==========================================================
+    ZoneType:
+      type: string
+      description: >
+        Physical kind of place. Like `UnitType` this is a fixed structural list;
+        customer-specific wording is a display concern.
+      enum:
+        - room
+        - classroom
+        - hall
+        - entrance
+        - gate
+        - loading_bay
+        - storage
+        - ward
+        - yard
+        - general
+      default: general
+
+    ZoneRef:
+      type: object
+      description: Compact zone, as nested inside a beacon.
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+          example: Loading Bay 3
+        zone_type:
+          $ref: "#/components/schemas/ZoneType"
+
+    Zone:
+      type: object
+      description: >
+        A named place inside a tenant — what turns beacon telemetry from a MAC
+        address into somewhere a customer recognises.
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+          description: >
+            Stored as typed, only trimmed. Unlike department names this is NOT
+            slugified — a zone name is a label read off a wall.
+          example: Loading Bay 3
+        zone_type:
+          $ref: "#/components/schemas/ZoneType"
+        org_unit_id:
+          type: integer
+          nullable: true
+          description: >
+            Owning org unit. Nullable, so zones can exist before the org chart
+            does. Names are unique within a unit, not tenant-wide.
+        org_unit_name:
+          type: string
+          nullable: true
+        code:
+          type: string
+          nullable: true
+          example: LB-3
+        description:
+          type: string
+          nullable: true
+        capacity:
+          type: integer
+          nullable: true
+          minimum: 0
+        is_active:
+          type: boolean
+        beacon_count:
+          type: integer
+          description: Beacons currently placed in this zone.
+        created_at:
+          $ref: './shared/primitives.yaml#/components/schemas/Timestamp'
+        updated_at:
+          $ref: './shared/primitives.yaml#/components/schemas/Timestamp'
+
+    ZoneRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 120
+          example: Loading Bay 3
+        zone_type:
+          $ref: "#/components/schemas/ZoneType"
+        org_unit_id:
+          type: integer
+          nullable: true
+        code:
+          type: string
+          maxLength: 50
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        capacity:
+          type: integer
+          nullable: true
+          minimum: 0
+        is_active:
+          type: boolean
+          default: true
+
+    ZoneUpdateRequest:
+      type: object
+      description: Partial update — omitted fields are left unchanged.
+      properties:
+        name:
+          type: string
+          maxLength: 120
+        zone_type:
+          $ref: "#/components/schemas/ZoneType"
+        org_unit_id:
+          type: integer
+          nullable: true
+        code:
+          type: string
+          maxLength: 50
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        capacity:
+          type: integer
+          nullable: true
+          minimum: 0
+        is_active:
+          type: boolean
+
+
+    # ==========================================================
+    # PLATFORM (cross-tenant, super-admin only)
+    # ==========================================================
+    OrgType:
+      type: string
+      description: >
+        Product / vertical. Drives which report shape a tenant renders. `visitor`
+        is the vcheck seam.
+      enum: [corporate, education, church, visitor]
+
+    OrgStatus:
+      type: string
+      description: Provisioning lifecycle of a tenant.
+      enum: [pending, provisioning, active, failed]
+
+    DashboardKpis:
+      type: object
+      description: Headline attendance KPIs for a single tenant, today.
+      properties:
+        total_headcount: { type: integer }
+        present_today: { type: integer }
+        absent_today: { type: integer }
+        currently_clocked_in: { type: integer }
+        attendance_rate_today: { type: number, format: float }
+        late_arrivals: { type: integer }
+        remote_today: { type: integer }
+        pending_corrections: { type: integer }
+
+    PlatformOrgRef:
+      type: object
+      properties:
+        id: { type: string, example: org_0D0uiOBBi91ZiW0v }
+        name: { type: string }
+        domain: { type: string }
+        org_type: { $ref: "#/components/schemas/OrgType" }
+        status: { $ref: "#/components/schemas/OrgStatus" }
+        is_active: { type: boolean }
+
+    PlatformOrgBreakdown:
+      allOf:
+        - $ref: "#/components/schemas/PlatformOrgRef"
+        - type: object
+          properties:
+            kpis: { $ref: "#/components/schemas/DashboardKpis" }
+            error:
+              type: string
+              nullable: true
+              description: Present instead of `kpis` when that tenant could not be read.
+
+    PlatformSummary:
+      type: object
+      description: Platform-wide totals. Per-org detail is in the envelope `meta`.
+      properties:
+        total_headcount: { type: integer }
+        present_today: { type: integer }
+        currently_clocked_in: { type: integer }
+        absent_today: { type: integer }
+        pending_corrections: { type: integer }
+        attendance_rate_today: { type: number, format: float }
+        active_organizations: { type: integer }
+
+    PlatformOrgListItem:
+      allOf:
+        - $ref: "#/components/schemas/PlatformOrgRef"
+        - type: object
+          properties:
+            headcount:
+              type: integer
+              nullable: true
+            present_today:
+              type: integer
+              nullable: true
+
+    PlatformOrgDashboard:
+      type: object
+      properties:
+        organization: { $ref: "#/components/schemas/PlatformOrgRef" }
+        kpis: { $ref: "#/components/schemas/DashboardKpis" }
+
+  responses:
+    Unauthorized: # Can be referenced as '#/components/responses/unauthorized'
+      description: Missing or invalid token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    Forbidden:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    Conflict:
+      description: Business rule conflict (e.g. already clocked in)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    UnprocessableEntity:
+      description: Validation error e.g. missing required field
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  # ==========================================================
+  # REUSABLE PARAMETERS
+  # ==========================================================
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        default: 1
+    PerPageParam:
+      name: per_page
+      in: query
+      schema:
+        type: integer
+        default: 20
+        maximum: 100
+    DateFromParam:
+      name: date_from
+      in: query
+      schema:
+        type: string
+        format: date
+      example: "2026-06-01"
+    DateToParam:
+      name: date_to
+      in: query
+      schema:
+        type: string
+        format: date
+      example: "2026-06-30"
+    EmployeeIdParam:
+      name: employee_id
+      in: query
+      schema:
+        type: integer
+    DepartmentIdParam:
+      name: department_id
+      in: query
+      schema:
+        type: integer
+    DepartmentNameParam:
+      name: department_name
+      in: query
+      schema:
+        type: string
+        example: "software_development"
+
+# ==========================================================
+# PATHS
+# ==========================================================
+paths:
+  # ==========================================================
+  # HEALTH
+  # ==========================================================
+  /health:
+    get:
+      tags: [Health]
+      summary: Service health check
+      operationId: health_check
+      security: []
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    description: Tells you the API is healthy
+                    enum: [ok, down]
+                    example: "ok"
+                  db:
+                    type: string
+                    description: Tells you the db connections is healthy
+                    enum: [connected, unreachable]
+                    example: connected
+
+  # ==========================================================
+  # AUTH
+  # ==========================================================
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Complete onboarding of an existing Auth0 user
+      operationId: authRegister
+      description: |
+        Creates a new employee record for an already authenticated Auth0 user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: Account created, pending approval
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Registration successful. Awaiting HR approval."
+                  employee_id:
+                    type: integer
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Validates that the authenticated Auth0 user exists in the app DB and is approved.
+      operationId: authLogin
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Login successful"
+                  employee:
+                    $ref: "#/components/schemas/CurrentUser"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Get the current authenticated user's app profile
+      operationId: auth_me
+      responses:
+        "200":
+          description: Current user's profile from the application database
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentUser"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ==========================================================
+  # ATTENDANCE (EMPLOYEES)
+  # ==========================================================
+  /attendance/clock-in:
+    post:
+      tags: [Attendance]
+      summary: Clock in (Employee)
+      operationId: clock_in
+      description: |
+        Records a server-side clock-in timestamp for the authenticated employee.
+        Returns `409` if the employee already has an open (un-closed) record for today.
+      responses:
+        "201":
+          description: Clocked in successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClockInResponse"
+        "409":
+          description: Already clocked in, an open record exists
+          $ref: "#/components/responses/Conflict"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /attendance/clock-out:
+    post:
+      tags: [Attendance]
+      summary: Clock out (Employee)
+      operationId: clock_out
+      description: |
+        Closes the current open attendance record. Returns `409` if no open record
+        exists (i.e. employee has not clocked in).
+      responses:
+        "200":
+          description: Clocked out successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClockOutResponse"
+        "409":
+          description: No open record exists
+          $ref: "#/components/responses/Conflict"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /attendance/me:
+    get:
+      tags: [Attendance]
+      summary: Get own attendance history
+      operationId: my_attendance
+      parameters:
+        - $ref: "#/components/parameters/DateFromParam"
+        - $ref: "#/components/parameters/DateToParam"
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PerPageParam"
+      responses:
+        "200":
+          description: Paginated attendance records for the authenticated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttendanceListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  # ==========================================================
+  # ATTENDANCE (HR)
+  # ==========================================================
+  /attendance:
+    get:
+      tags: [HR - Attendance]
+      summary: Query attendance records
+      operationId: list_attendance
+      description: |
+        Managers - retrieve attendance records for their department
+        HR - retrieve attendance records for all employees
+      parameters:
+        - $ref: "#/components/parameters/EmployeeIdParam"
+        - $ref: "#/components/parameters/DepartmentIdParam"
+        - $ref: "#/components/parameters/DateFromParam"
+        - $ref: "#/components/parameters/DateToParam"
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PerPageParam"
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [open, closed, corrected]
+      responses:
+        "200":
+          description: Filtered, paginated attendance records
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttendanceListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags: [HR - Attendance]
+      summary: Manually create an attendance record (HR only)
+      operationId: create_attendance_manual
+      description: |
+        Backfill or manually enter an attendance record on behalf of an employee.
+        Writes an audit log entry with the mandatory `reason` field.
+        Sets that attendance record's status to 'corrected.'
+        Only done by HR & Admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AttendanceManualRequest"
+      responses:
+        "201":
+          description: Manual record created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttendanceRecord"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          description: A record for that employee/date already exists
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /attendance/{id}:
+    put:
+      tags: [HR - Attendance]
+      summary: Correct an existing attendance record (HR only)
+      operationId: correct_attendance
+      description: |
+        HR/Admin can update `clock_in`, `clock_out`, or `notes` on any record.
+        Every correction writes an audit log entry; `reason` is mandatory.
+        **Roles:** HR, Admin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AttendanceCorrectionRequest"
+      responses:
+        "200":
+          description: Record corrected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttendanceRecord"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /attendance/{id}/audit:
+    get:
+      tags: [HR - Attendance]
+      summary: Get audit trail for a record (HR only)
+      operationId: get_attendance_audit
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Ordered list of audit log entries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  record_id:
+                    type: integer
+                  audit_log:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AuditLogEntry"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ==========================================================
+  # EMPLOYEES (HR)
+  # ==========================================================
+  /employees:
+    get:
+      tags: [HR - Employees]
+      summary: List all employees (HR only)
+      operationId: list_employees
+      parameters:
+        - name: search
+          in: query
+          description: Full-text search on first_name, last_name, email
+          schema:
+            type: string
+            example: "Philomena"
+        - $ref: "#/components/parameters/DepartmentIdParam"
+        - $ref: "#/components/parameters/DepartmentNameParam"
+        - name: is_active
+          in: query
+          schema:
+            type: boolean
+            example: true
+        - name: is_approved
+          in: query
+          schema:
+            type: boolean
+            example: false
+        - name: role
+          in: query
+          description: Filter by role name. Accepts legacy spellings.
+          schema:
+            $ref: './shared/primitives.yaml#/components/schemas/RoleName'
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PerPageParam"
+      responses:
+        "200":
+          description: Paginated employee list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Employee"
+                  meta:
+                    $ref: "#/components/schemas/PaginationMeta"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+    post:
+      tags: [HR - Employees]
+      summary: Create a new employee (HR only)
+      operationId: create_employee
+      description: |
+        HR-initiated employee creation. A temporary password can be sent via email
+        or HR can trigger a password-reset flow separately.
+        Only done by HR & Admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmployeeCreateRequest"
+      responses:
+        "201":
+          description: Employee created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Employee"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          description: Email already exists
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /employees/{id}:
+    get:
+      tags: [HR - Employees]
+      summary: Get a single employee (HR only)
+      operationId: get_employee
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Employee detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Employee"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    put:
+      tags: [HR - Employees]
+      summary: Update an employee (HR only)
+      operationId: update_employee
+      description: |
+        Partial updates are accepted. Only provided fields are modified.
+        Setting `is_approved: true` activates a pending self-registered account.
+        Only done by HR & Admin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmployeeUpdateRequest"
+      responses:
+        "200":
+          description: Employee updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Employee"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /employees/{id}/deactivate:
+    post:
+      tags: [HR - Employees]
+      summary: Deactivate an employee (HR only)
+      operationId: deactivate_employee
+      description: |
+        Sets `is_active: false`. Does not delete the record or its attendance history.
+        Only done by HR & Admin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Employee deactivated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Employee deactivated."
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /employees/{id}/approve:
+    post:
+      tags: [HR - Employees]
+      summary: Approve a self-registered employee (HR only)
+      operationId: approve_employee
+      description: |
+        Sets `is_approved: true`, allowing the employee to log in.
+        Only done by HR & Admin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Employee approved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Employee approved."
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ==========================================================
+  # DEPARTMENTS (HR)
+  # ==========================================================
+  /departments:
+    get:
+      tags: [HR - Departments]
+      summary: List all departments
+      operationId: list_departments
+      responses:
+        "200":
+          description: All departments
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Department"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    post:
+      tags: [HR - Departments]
+      summary: Create a department (HR only)
+      operationId: create_department
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DepartmentRequest"
+      responses:
+        "201":
+          description: Department created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Department"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /departments/{id}:
+    put:
+      tags: [HR - Departments]
+      summary: Update a department (HR only)
+      operationId: update_department
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DepartmentRequest"
+      responses:
+        "200":
+          description: Department updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Department"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags: [HR - Departments]
+      summary: Delete a department (HR only)
+      operationId: delete_department
+      description: |
+        A department can only be deleted if it has no active employees.
+        Attempting to delete a populated department returns `409`.
+
+        If the unit has child units the request is rejected unless
+        `reparent_to` is supplied — silently promoting a campus's children to
+        roots would lose the org chart. Children are moved in the same
+        transaction as the delete.
+
+        **Roles:** HR, Admin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+        - name: reparent_to
+          in: query
+          required: false
+          description: >
+            Where to move child units. A department id, or `root` to promote them
+            to top level. Required when the unit has children.
+          schema:
+            type: string
+            example: "4"
+      responses:
+        "200":
+          description: Department deleted
+          content:
+            application/json:
+              schema:
+                $ref: './shared/envelope.yaml#/components/schemas/DeletedEnvelope'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Department has active employees
+          $ref: "#/components/responses/Conflict"
+
+  # ==========================================================
+  # REPORTS
+  # ==========================================================
+  /reports/attendance:
+    get:
+      tags: [Reports]
+      summary: Attendance summary report (HR only)
+      operationId: report_attendance
+      description: |
+        Returns per-employee attendance summaries for the given date range.
+        Add `?format=csv` to download as a CSV file instead of JSON.
+        Only done by HR & Admin
+      parameters:
+        - $ref: "#/components/parameters/DateFromParam"
+        - $ref: "#/components/parameters/DateToParam"
+        - $ref: "#/components/parameters/DepartmentIdParam"
+        - $ref: "#/components/parameters/EmployeeIdParam"
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [json, csv]
+            default: json
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PerPageParam"
+      responses:
+        "200":
+          description: Attendance summary (JSON or CSV)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ReportEmployeeAttendance"
+                  meta:
+                    $ref: "#/components/schemas/PaginationMeta"
+            text/csv:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /reports/attendance/departments:
+    get:
+      tags: [Reports]
+      summary: Get attendance report for all departments (HR only)
+      operationId: report_attendance_all_departments
+      parameters:
+        - $ref: "#/components/parameters/DateFromParam"
+        - $ref: "#/components/parameters/DateToParam"
+      responses:
+        "200":
+          description: Departments attendance records found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ReportDepartmentAttendance"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /reports/attendance/departments/{id}:
+    get:
+      tags: [Reports]
+      summary: Get attendance report for one department (HR only)
+      operationId: report_attendance_one_department
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+        - $ref: "#/components/parameters/DateFromParam"
+        - $ref: "#/components/parameters/DateToParam"
+      responses:
+        "200":
+          description: Department attendance record found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ReportDepartmentAttendance"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /reports/dashboard:
+    get:
+      tags: [Reports]
+      summary: HR dashboard KPIs
+      operationId: report_dashboard
+      description: |
+        Returns today's real-time headcount metrics.
+        Only done by HR & Admin
+      responses:
+        "200":
+          description: Dashboard KPIs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_headcount:
+                    type: integer
+                    example: 47
+                  present_today:
+                    type: integer
+                    example: 39
+                  absent_today:
+                    type: integer
+                    example: 8
+                  currently_clocked_in:
+                    type: integer
+                    example: 34
+                  attendance_rate_today:
+                    type: number
+                    format: float
+                    description: "Percentage 0–100"
+                    example: 82.98
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  # ==========================================================
+  # AUTH — tenant resolution, profile sync, approval queue
+  # ==========================================================
+  /auth/organization-by-subdomain/{subdomain}:
+    get:
+      tags: [Auth]
+      summary: Resolve a tenant from a subdomain or email domain
+      description: >
+        Public. Called before sign-in so the client can hand Auth0 the right
+        organization id. Accepts a bare subdomain (`daystar`), a full host, or an
+        email address — the handler strips `@`, then trims a known suffix
+        (`.ac.ke`, `.edu`, `.com`, `.co.ke`, `.org`, `.net`) before matching.
+      security: []
+      parameters:
+        - name: subdomain
+          in: path
+          required: true
+          schema:
+            type: string
+          example: daystar
+      responses:
+        "200":
+          description: Tenant resolved.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './shared/envelope.yaml#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/OrganizationSummary"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /auth/sync:
+    post:
+      tags: [Auth]
+      summary: Upsert the signed-in user from token claims
+      description: >
+        Idempotent. Called on first sign-in. New employees are created
+        `is_approved=false` pending review, except users carrying a super_admin
+        role in Auth0, who are approved automatically.
+      responses:
+        "200":
+          description: Employee record created or refreshed.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './shared/envelope.yaml#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Employee"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /auth/metadata:
+    get:
+      tags: [Auth]
+      summary: Roles and departments for form dropdowns
+      responses:
+        "200":
+          description: Reference data for the active tenant.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './shared/envelope.yaml#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          roles:
+                            type: array
+                            items:
+                              $ref: "#/components/schemas/RoleSummary"
+                          departments:
+                            type: array
+                            items:
+                              $ref: "#/components/schemas/Department"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /auth/users/pending:
+    get:
+      tags: [Auth]
+      summary: Employees awaiting approval
+      responses:
+        "200":
+          description: Unapproved employees in this tenant.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './shared/envelope.yaml#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Employee"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /auth/users/{user_id}/approve:
+    post:
+      tags: [Auth]
+      summary: Approve a pending employee
+      description: >
+        Sets `is_approved` and `is_active`. Role and department may be assigned in
+        the same call. Only a super_admin may approve another super_admin.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            $ref: './shared/primitives.yaml#/components/schemas/Uuid'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role_id:
+                  type: integer
+                department_id:
+                  type: integer
+                is_internal:
+                  type: boolean
+      responses:
+        "200":
+          description: Employee approved.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './shared/envelope.yaml#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ==========================================================
+  # ATTENDANCE — personal stats
+  # ==========================================================
+  /attendance/stats:
+    get:
+      tags: [Attendance]
+      summary: Personal attendance summary for the current week
+      description: >
+        Week starts Monday, UTC. `hours_this_week` counts an open session up to
+        now, so it increases while the caller is clocked in.
+      responses:
+        "200":
+          description: Summary for the authenticated employee.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './shared/envelope.yaml#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/AttendanceStats"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ==========================================================
+  # REPORTS — timeline and trends
+  # ==========================================================
+  /reports/attendance/timeline:
+    get:
+      tags: [Reports]
+      summary: One day of attendance across all employees
+      description: >
+        Employees with no department are excluded, which in practice filters out
+        platform super admins.
+      parameters:
+        - name: date
+          in: query
+          required: false
+          description: Defaults to today.
+          schema:
+            $ref: './shared/primitives.yaml#/components/schemas/IsoDate'
+      responses:
+        "200":
+          description: Per-employee timeline for the target date.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './shared/envelope.yaml#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/TimelineEntry"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /reports/attendance/trends:
+    get:
+      tags: [Reports]
+      summary: Total hours per day over a range
+      description: >
+        Every day in the range is present, including days with no records, which
+        report `total_hours: 0` — so the series can be charted without gap filling.
+      parameters:
+        - name: date_from
+          in: query
+          schema:
+            $ref: './shared/primitives.yaml#/components/schemas/IsoDate'
+        - name: date_to
+          in: query
+          schema:
+            $ref: './shared/primitives.yaml#/components/schemas/IsoDate'
+        - name: department_id
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Daily totals, ascending.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './shared/envelope.yaml#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/TrendPoint"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  # ==========================================================
+  # BEACONS
+  # ==========================================================
+  /beacons:
+    get:
+      tags: [Beacons]
+      summary: List BLE beacons
+      responses:
+        "200":
+          description: Beacons in this tenant, ordered by name.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './shared/envelope.yaml#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Beacon"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags: [Beacons]
+      summary: Register a beacon
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BeaconRequest"
+      responses:
+        "201":
+          description: Beacon registered.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './shared/envelope.yaml#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Beacon"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /beacons/{beacon_id}:
+    parameters:
+      - name: beacon_id
+        in: path
+        required: true
+        schema:
+          $ref: './shared/primitives.yaml#/components/schemas/Uuid'
+    put:
+      tags: [Beacons]
+      summary: Update a beacon
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BeaconUpdateRequest"
+      responses:
+        "200":
+          description: Beacon updated.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './shared/envelope.yaml#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Beacon"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+    delete:
+      tags: [Beacons]
+      summary: Delete a beacon
+      description: Cascades to its assignments.
+      responses:
+        "200":
+          description: Beacon deleted.
+          content:
+            application/json:
+              schema:
+                $ref: './shared/envelope.yaml#/components/schemas/DeletedEnvelope'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /beacons/assignments:
+    get:
+      tags: [Beacons]
+      summary: List beacon-to-department assignments
+      responses:
+        "200":
+          description: All assignments in this tenant.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './shared/envelope.yaml#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/BeaconAssignment"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags: [Beacons]
+      summary: Assign a beacon to a department
+      description: A beacon may serve several departments; the pair must be unique.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [beacon_id, department_id]
+              properties:
+                beacon_id:
+                  $ref: './shared/primitives.yaml#/components/schemas/Uuid'
+                department_id:
+                  type: integer
+      responses:
+        "201":
+          description: Assignment created.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './shared/envelope.yaml#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/BeaconAssignment"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /beacons/assignments/{assignment_id}:
+    delete:
+      tags: [Beacons]
+      summary: Remove a beacon assignment
+      parameters:
+        - name: assignment_id
+          in: path
+          required: true
+          schema:
+            $ref: './shared/primitives.yaml#/components/schemas/Uuid'
+      responses:
+        "200":
+          description: Assignment removed.
+          content:
+            application/json:
+              schema:
+                $ref: './shared/envelope.yaml#/components/schemas/DeletedEnvelope'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ==========================================================
+  # SAFECHILD
+  # ==========================================================
+  /safechild/my-classes:
+    get:
+      tags: [SafeChild]
+      summary: Classes the caller teaches
+      description: >
+        Scoped through `class_teachers`. Admins see every class. Returns an empty
+        list rather than 404 when the caller teaches none.
+      responses:
+        "200":
+          description: Classes with live child counts.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './shared/envelope.yaml#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/SundaySchoolClass"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /safechild/class-history:
+    get:
+      tags: [SafeChild]
+      summary: Drop-off and pickup history for the caller classes
+      parameters:
+        - name: days
+          in: query
+          required: false
+          description: Look-back window. Defaults to 30.
+          schema:
+            type: integer
+            default: 30
+            minimum: 1
+      responses:
+        "200":
+          description: Pickup tokens, newest first.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './shared/envelope.yaml#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/ClassHistoryEntry"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /safechild/children:
+    get:
+      tags: [SafeChild]
+      summary: Children on the caller roster
+      responses:
+        "200":
+          description: Children with their authorised guardians.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './shared/envelope.yaml#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Child"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /safechild/drop-off:
+    post:
+      tags: [SafeChild]
+      summary: Log a drop-off and issue a pickup token
+      description: >
+        Issues a single-use 4-digit PIN and a QR payload, both valid until
+        `expires_at`. The PIN is returned exactly once — it is not retrievable later.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [child_id]
+              properties:
+                child_id:
+                  $ref: './shared/primitives.yaml#/components/schemas/Uuid'
+                guardian_id:
+                  type: string
+                  format: uuid
+                  nullable: true
+                employee_id:
+                  type: string
+                  format: uuid
+                  nullable: true
+      responses:
+        "201":
+          description: Drop-off logged, token issued.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './shared/envelope.yaml#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/DropOffResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /safechild/pickup/verify:
+    post:
+      tags: [SafeChild]
+      summary: Verify a pickup PIN or QR payload and release the child
+      description: >
+        Single use. A token that has already been redeemed, or has expired, is
+        rejected. On success the child is marked released and the token consumed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code:
+                  type: string
+                  description: The 4-digit PIN or the scanned QR payload.
+                  example: "5842"
+                verifier_id:
+                  type: string
+                  format: uuid
+                  nullable: true
+      responses:
+        "200":
+          description: Verified; child released.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './shared/envelope.yaml#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/PickupVerification"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  # ==========================================================
+  # SETTINGS
+  # ==========================================================
+  /settings:
+    get:
+      tags: [Settings]
+      summary: Read tenant attendance defaults
+      description: >
+        Readable by any authenticated user — an employee needs the cutoff to know
+        when their own clock-in window closes. Writes are admin-only.
+      responses:
+        "200":
+          description: Current defaults.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './shared/envelope.yaml#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/OrgSettings"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    put:
+      tags: [Settings]
+      summary: Update tenant attendance defaults
+      description: Partial update — omitted fields are left unchanged.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrgSettingsUpdate"
+      responses:
+        "200":
+          description: Defaults updated.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './shared/envelope.yaml#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/OrgSettings"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /settings/employees/{employee_id}/cutoff:
+    put:
+      tags: [Settings]
+      summary: Set or clear one employee clock-in cutoff override
+      description: >
+        Manager-set only — an employee cannot extend their own window. Send
+        `{"checkin_cutoff_hour": null}` to drop the override and fall back to the
+        tenant default.
+      parameters:
+        - name: employee_id
+          in: path
+          required: true
+          schema:
+            $ref: './shared/primitives.yaml#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [checkin_cutoff_hour]
+              properties:
+                checkin_cutoff_hour:
+                  type: integer
+                  nullable: true
+                  minimum: 0
+                  maximum: 23
+      responses:
+        "200":
+          description: Override set or cleared.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './shared/envelope.yaml#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/EmployeeCutoff"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  # ==========================================================
+  # ORG TREE
+  # ==========================================================
+  /departments/tree:
+    get:
+      tags: [HR - Departments]
+      summary: The org chart, nested
+      description: >
+        Every unit in the tenant, assembled into `children` lists with roots
+        first. A unit whose parent is absent from the result is returned as a
+        root rather than dropped, so a partial or filtered view still renders.
+      responses:
+        "200":
+          description: Nested org tree.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './shared/envelope.yaml#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/DepartmentTreeNode"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /departments/{id}/employees:
+    get:
+      tags: [HR - Departments]
+      summary: Employees in a unit, optionally including everything beneath it
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: include_descendants
+          in: query
+          required: false
+          description: >
+            When true, returns everyone in the whole subtree — "show me everyone
+            at Nairobi Campus" spans its divisions and teams.
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: Employees in scope.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './shared/envelope.yaml#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Employee"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ==========================================================
+  # ZONES
+  # ==========================================================
+  /zones:
+    get:
+      tags: [Zones]
+      summary: List zones
+      description: >
+        Read access is broad on purpose — an employee needs zone names to make
+        sense of their own attendance records. Writes are admin-only.
+      parameters:
+        - name: org_unit_id
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: zone_type
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/ZoneType"
+        - name: is_active
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Zones in this tenant, ordered by name.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './shared/envelope.yaml#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Zone"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+    post:
+      tags: [Zones]
+      summary: Create a zone
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ZoneRequest"
+      responses:
+        "201":
+          description: Zone created.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './shared/envelope.yaml#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Zone"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /zones/{zone_id}:
+    parameters:
+      - name: zone_id
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      tags: [Zones]
+      summary: Read one zone
+      responses:
+        "200":
+          description: The zone.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './shared/envelope.yaml#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Zone"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Zones]
+      summary: Update a zone
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ZoneUpdateRequest"
+      responses:
+        "200":
+          description: Zone updated.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './shared/envelope.yaml#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Zone"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+    delete:
+      tags: [Zones]
+      summary: Delete a zone
+      description: >
+        Refused while beacons are still placed in it. The foreign key would
+        happily orphan them, but silently un-placing hardware should be a
+        deliberate act.
+      responses:
+        "200":
+          description: Zone deleted.
+          content:
+            application/json:
+              schema:
+                $ref: './shared/envelope.yaml#/components/schemas/DeletedEnvelope'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  # ==========================================================
+  # PLATFORM (super-admin, cross-tenant)
+  # ==========================================================
+  /platform/summary:
+    get:
+      tags: [Platform]
+      summary: Platform-wide attendance totals across all active tenants
+      description: >
+        Super-admin only. Aggregates each active tenant's dashboard KPIs; per-org
+        detail is returned in the envelope `meta.organizations`. A tenant that
+        cannot be read is reported with an `error` instead of `kpis` rather than
+        failing the whole response.
+      responses:
+        "200":
+          description: Aggregate totals + per-org breakdown in meta.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './shared/envelope.yaml#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/PlatformSummary"
+                      meta:
+                        type: object
+                        properties:
+                          organizations:
+                            type: array
+                            items:
+                              $ref: "#/components/schemas/PlatformOrgBreakdown"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /platform/organizations:
+    get:
+      tags: [Platform]
+      summary: All organizations with a headline stat each
+      description: Super-admin only. Includes suspended orgs; headline stats are null for those.
+      responses:
+        "200":
+          description: Organizations with org_type/status and a cheap headline.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './shared/envelope.yaml#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/PlatformOrgListItem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /platform/organizations/{org_id}/dashboard:
+    get:
+      tags: [Platform]
+      summary: One organization's dashboard, viewed by a super-admin
+      description: >
+        Super-admin only. Runs the identical dashboard query the tenant's own
+        admins see, against that tenant's schema.
+      parameters:
+        - name: org_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: org_0D0uiOBBi91ZiW0v
+      responses:
+        "200":
+          description: The organization plus its dashboard KPIs.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './shared/envelope.yaml#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/PlatformOrgDashboard"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"

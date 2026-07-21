@@ -1,0 +1,30 @@
+# Multi-tenancy.
+#
+# Every request resolves to exactly one tenant schema before any handler runs
+# (backend/utils/tenant_middleware.py, registered as before_request). Resolution
+# order:
+#
+#   1. `org_id` claim on the bearer token (or the custom
+#      https://tallycheck.co.ke/org_id claim)
+#   2. X-Tenant-Subdomain header
+#   3. Host subdomain, e.g. acme.tallycheck.co.ke
+#
+# Unresolved or inactive tenants fall back to the `public` schema, which holds no
+# business data — so a failed resolution yields empty results, never another
+# tenant's rows.
+#
+# Callers holding a token normally send nothing: the token carries the tenant.
+# The header exists for pre-auth calls and for tooling.
+
+components:
+  parameters:
+    TenantSubdomain:
+      name: X-Tenant-Subdomain
+      in: header
+      required: false
+      description: >
+        Explicit tenant subdomain. Ignored when the bearer token already carries
+        an org claim — the token always wins.
+      schema:
+        type: string
+        example: daystar

@@ -6,8 +6,8 @@
 
 .form-group label,
 .form-group .label-text {
-  font-size: var(--fs-sm);
-  color: var(--fg-3);
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
   font-weight: var(--fw-medium);
   margin-bottom: var(--space-2);
   display: block;
@@ -19,12 +19,12 @@
 }
 .toggle-group button {
   padding: var(--space-2) var(--space-4);
-  border: 1px solid var(--border-2);
-  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-base);
   border-radius: var(--radius-md);
   font-family: var(--font-body);
-  font-size: var(--fs-sm);
-  color: var(--fg-1);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -32,25 +32,25 @@
   transition: all 0.2s;
 }
 .toggle-group button:hover {
-  background: var(--bg-sunken);
+  background: var(--surface-sunken);
 }
 .toggle-group button.active {
-  background: var(--adept-navy-700);
+  background: var(--brand-700);
   color: white;
-  border-color: var(--adept-navy-700);
+  border-color: var(--brand-700);
 }
 .location-group button.active {
   background: #eef2ff;
-  color: var(--adept-navy-700);
+  color: var(--brand-700);
   border-color: #c7d2fe;
 }
 .single-line-note {
   width: 100%;
   padding: var(--space-3);
-  border: 1px solid var(--border-2);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-md);
   font-family: var(--font-body);
-  font-size: var(--fs-sm);
+  font-size: var(--text-sm);
   outline: none;
 }
 .single-line-note:focus {
@@ -67,8 +67,8 @@
 
 .beacon-status-box {
   padding: 10px 12px;
-  background: var(--bg-surface, #f8fafc);
-  border: 1px solid var(--border-color, #e2e8f0);
+  background: var(--surface-base, #f8fafc);
+  border: 1px solid var(--border-strong, #e2e8f0);
   border-radius: var(--radius-md, 8px);
   display: flex;
   flex-direction: column;
@@ -95,7 +95,7 @@
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      color: var(--adept-navy-700, #4338ca);
+      color: var(--brand-700, #4338ca);
       font-weight: 700;
     }
   }
@@ -108,7 +108,7 @@
     .beacon-name {
       font-size: 13px;
       font-weight: 600;
-      color: var(--fg-1, #0f172a);
+      color: var(--text-primary, #0f172a);
       display: flex;
       align-items: center;
       gap: 6px;
@@ -116,7 +116,7 @@
 
     .beacon-meta {
       font-size: 11px;
-      color: var(--fg-3, #64748b);
+      color: var(--text-tertiary, #64748b);
     }
   }
 }

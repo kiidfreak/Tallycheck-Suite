@@ -16,10 +16,10 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
         display: inline-flex;
         align-items: center;
         gap: var(--space-2);
-        font-size: var(--fs-xs);
+        font-size: var(--text-xs);
         font-weight: var(--fw-semibold);
         padding: 4px 10px;
-        border-radius: var(--radius-pill);
+        border-radius: var(--radius-full);
         line-height: 1.4;
       }
       .dot {
@@ -29,19 +29,19 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
         background: currentColor;
       }
       .pill-info {
-        background: var(--info-100);
+        background: var(--info-tint);
         color: var(--info);
       }
       .pill-success {
-        background: var(--success-100);
+        background: var(--success-tint);
         color: var(--success);
       }
       .pill-warning {
-        background: var(--warning-100);
+        background: var(--warning-tint);
         color: var(--warning);
       }
       .pill-danger {
-        background: var(--danger-100);
+        background: var(--danger-tint);
         color: var(--danger);
       }
       .pill-purple {
@@ -49,7 +49,7 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
         color: var(--status-remote);
       }
       .pill- {
-        background: var(--info-100);
+        background: var(--info-tint);
         color: var(--info);
       }
     `,

@@ -123,13 +123,13 @@
           @for (emp of displayedEmployees(); track emp.id) {
             <tr>
               <td class="font-medium" style="font-weight: 500;">{{ emp.first_name }} {{ emp.last_name }}</td>
-              <td class="text-muted" style="color: var(--text-muted, #64748b);">{{ emp.email }}</td>
-              <td class="text-muted" style="color: var(--text-muted, #64748b);">{{ (emp.created_at | date:'mediumDate') || '—' }}</td>
+              <td class="text-muted" style="color: var(--text-tertiary, #64748b);">{{ emp.email }}</td>
+              <td class="text-muted" style="color: var(--text-tertiary, #64748b);">{{ (emp.created_at | date:'mediumDate') || '—' }}</td>
               <td>
                 @if (selections()[emp.id]; as sel) {
                   <div class="approval-actions" style="display: flex; gap: 1rem; align-items: flex-end;">
                     <div class="approval-field" style="display: flex; flex-direction: column; gap: 0.25rem;">
-                      <span class="approval-label" style="font-size: 0.75rem; color: var(--text-muted, #64748b); text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em;">Role</span>
+                      <span class="approval-label" style="font-size: 0.75rem; color: var(--text-tertiary, #64748b); text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em;">Role</span>
                       <select class="approval-select omni-input" [(ngModel)]="sel.role_id" style="padding: 0.4rem 0.75rem; height: auto; min-width: 140px; border-radius: 6px; font-size: 0.875rem;">
                         @for (role of roles(); track role.id) {
                           <option [value]="role.id">{{ role.name | formatLabel }}</option>
@@ -138,7 +138,7 @@
                     </div>
                     
                     <div class="approval-field" style="display: flex; flex-direction: column; gap: 0.25rem;">
-                      <span class="approval-label" style="font-size: 0.75rem; color: var(--text-muted, #64748b); text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em;">Department</span>
+                      <span class="approval-label" style="font-size: 0.75rem; color: var(--text-tertiary, #64748b); text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em;">Department</span>
                       <select class="approval-select omni-input" [(ngModel)]="sel.department_id" style="padding: 0.4rem 0.75rem; height: auto; min-width: 180px; border-radius: 6px; font-size: 0.875rem;">
                         <option [ngValue]="null">No Department</option>
                         @for (dept of departments(); track dept.id) {
@@ -148,7 +148,7 @@
                     </div>
 
                     <div class="approval-field" style="display: flex; flex-direction: column; gap: 0.25rem;">
-                      <span class="approval-label" style="font-size: 0.75rem; color: var(--text-muted, #64748b); text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em;">Type</span>
+                      <span class="approval-label" style="font-size: 0.75rem; color: var(--text-tertiary, #64748b); text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em;">Type</span>
                       <select class="approval-select omni-input" [(ngModel)]="sel.is_internal" style="padding: 0.4rem 0.75rem; height: auto; min-width: 100px; border-radius: 6px; font-size: 0.875rem;">
                         <option [ngValue]="true">Internal</option>
                         <option [ngValue]="false">External</option>

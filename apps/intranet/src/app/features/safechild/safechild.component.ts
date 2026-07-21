@@ -1,14 +1,14 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ButtonComponent, IconComponent, ToastService } from '@omni/ui';
+import { ButtonComponent, IconComponent, PillComponent, ToastService } from '@omni/ui';
 import { AuthService } from '@omni/auth';
-import { SafeChildService, Child, Guardian, DropOffResponse, VerificationResponse } from './safechild.service';
+import { SafeChildService, Child, DropOffResponse, VerificationResponse } from './safechild.service';
 
 @Component({
   selector: 'app-safechild',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonComponent, IconComponent],
+  imports: [CommonModule, FormsModule, ButtonComponent, IconComponent, PillComponent],
   templateUrl: './safechild.component.html',
   styleUrls: ['./safechild.component.scss']
 })

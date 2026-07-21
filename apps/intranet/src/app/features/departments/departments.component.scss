@@ -20,11 +20,11 @@
         margin: 0;
         font-size: 24px;
         font-weight: 600;
-        color: var(--text-main);
+        color: var(--text-primary);
       }
       p {
         margin: 4px 0 0;
-        color: var(--text-muted);
+        color: var(--text-tertiary);
         font-size: 14px;
       }
     }
@@ -41,21 +41,21 @@
       th, td {
         padding: 16px 24px;
         text-align: left;
-        border-bottom: 1px solid var(--border-color);
+        border-bottom: 1px solid var(--border-strong);
       }
 
       th {
         font-size: 12px;
         font-weight: 600;
         text-transform: uppercase;
-        color: var(--text-muted);
+        color: var(--text-tertiary);
         letter-spacing: 0.5px;
-        background: var(--bg-card);
+        background: var(--surface-base);
       }
 
       td {
         font-size: 14px;
-        color: var(--text-main);
+        color: var(--text-primary);
       }
 
       tr:last-child td {
@@ -65,7 +65,7 @@
       .empty-state {
         text-align: center;
         padding: 48px;
-        color: var(--text-muted);
+        color: var(--text-tertiary);
       }
     }
   }
@@ -88,7 +88,7 @@
   right: 0;
   bottom: 0;
   width: 400px;
-  background: var(--bg-card);
+  background: var(--surface-base);
   box-shadow: -4px 0 24px rgba(0,0,0,0.1);
   z-index: 101;
   display: flex;
@@ -99,7 +99,7 @@
     justify-content: space-between;
     align-items: center;
     padding: 24px;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-strong);
 
     h2 {
       margin: 0;
@@ -110,7 +110,7 @@
       background: none;
       border: none;
       cursor: pointer;
-      color: var(--text-muted);
+      color: var(--text-tertiary);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -118,7 +118,7 @@
       border-radius: 4px;
 
       &:hover {
-        background: var(--bg-hover);
+        background: var(--surface-hover);
       }
     }
   }
@@ -139,19 +139,19 @@
       label {
         font-size: 13px;
         font-weight: 500;
-        color: var(--text-main);
+        color: var(--text-primary);
       }
 
       .hint {
         font-size: 12px;
-        color: var(--text-muted);
+        color: var(--text-tertiary);
       }
     }
   }
 
   .drawer-footer {
     padding: 16px 24px;
-    border-top: 1px solid var(--border-color);
+    border-top: 1px solid var(--border-strong);
     display: flex;
     justify-content: flex-end;
     gap: 12px;

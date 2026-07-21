@@ -1,9 +1,34 @@
 <div class="reports-dashboard animate-fade-in">
-  <div class="dashboard-header">
-    <div class="title-container">
-      <h2>{{ is_safechild_reports() ? 'Sunday School Child Attendance & Ministry Analytics' : 'Overall Reports' }}</h2>
-      <p class="subtitle">{{ is_safechild_reports() ? 'FEM Church Karen — Children Ministry Attendance & Checkout Analytics' : 'Real-time KPI metrics and attendance overview' }}</p>
+  <div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
+    <div class="title-container" style="display: flex; flex-direction: column; gap: 4px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <h2 style="margin: 0;">{{ report_title() }}</h2>
+        <omni-pill [tone]="report_scope_pill().tone">
+          <omni-icon [name]="report_scope_pill().icon" [size]="12"></omni-icon>
+          <span>{{ report_scope_pill().label }}</span>
+        </omni-pill>
+      </div>
+      <p class="subtitle" style="margin: 0;">{{ report_subtitle() }}</p>
     </div>
+
+    @if (has_safechild_access() && has_hr_access()) {
+      <div class="report-view-toggle" style="display: flex; background: var(--surface-base); border: 1px solid var(--border-strong); border-radius: var(--radius-md); padding: 4px; gap: 4px;">
+        <button 
+          style="padding: 6px 14px; border: none; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s;"
+          [style.background]="!is_safechild_reports() ? 'var(--brand-600)' : 'transparent'"
+          [style.color]="!is_safechild_reports() ? '#fff' : 'var(--text-secondary)'"
+          (click)="active_tab.set('hr')">
+          HR Attendance
+        </button>
+        <button 
+          style="padding: 6px 14px; border: none; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s;"
+          [style.background]="is_safechild_reports() ? 'var(--brand-600)' : 'transparent'"
+          [style.color]="is_safechild_reports() ? '#fff' : 'var(--text-secondary)'"
+          (click)="active_tab.set('safechild')">
+          Sunday School Analytics
+        </button>
+      </div>
+    }
   </div>
 
   @if (is_safechild_reports()) {
@@ -52,7 +77,7 @@
 
     <!-- Sunday School Class Breakdown Table -->
     <div class="card" style="padding: 20px; margin-bottom: 24px;">
-      <h3 style="margin: 0 0 16px 0; font-size: 16px; color: var(--fg-1);">Sunday School Class Group Breakdown</h3>
+      <h3 style="margin: 0 0 16px 0; font-size: 16px; color: var(--text-primary);">Sunday School Class Group Breakdown</h3>
       <table class="omni-table">
         <thead>
           <tr>
@@ -68,12 +93,12 @@
         <tbody>
           @for (c of safechild_class_reports(); track c.class_name) {
             <tr>
-              <td><strong style="color: var(--fg-1);">{{ c.class_name }}</strong></td>
+              <td><strong style="color: var(--text-primary);">{{ c.class_name }}</strong></td>
               <td>{{ c.location }}</td>
               <td>{{ c.teacher }}</td>
               <td>{{ c.total }}</td>
               <td><span style="color: var(--success); font-weight: 600;">{{ c.present }}</span></td>
-              <td><span style="color: var(--adept-navy-700); font-weight: 600;">{{ c.released }}</span></td>
+              <td><span style="color: var(--brand-700); font-weight: 600;">{{ c.released }}</span></td>
               <td>
                 <omni-pill tone="success">
                   {{ Math.round((c.present / c.total) * 100) }}%
@@ -84,7 +109,7 @@
         </tbody>
       </table>
     </div>
-  }
+  } @else {
 
   <!-- KPI Cards (Real-time Today) -->
   <section class="kpi-grid" *ngIf="dashboard_metrics()">
@@ -157,7 +182,7 @@
 
         <div class="card-actions" style="display: flex; gap: 12px; align-items: center;">
           <div class="toggle-group"
-            style="display: flex; background: var(--bg-component); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 2px;">
+            style="display: flex; background: var(--surface-base); border: 1px solid var(--border-strong); border-radius: var(--radius-md); padding: 2px;">
             <button title="List View"
               style="padding: 6px; background: transparent; border: none; border-radius: var(--radius-sm); cursor: pointer; color: var(--text-secondary);"
               [class.active]="currentLayout() === 'list'" (click)="currentLayout.set('list')">
@@ -173,13 +198,13 @@
           <div style="display: flex; gap: 8px; align-items: center;">
             <input type="date" id="dateFrom" [ngModel]="filter_date_from()"
               (ngModelChange)="filter_date_from.set($event); apply_filters()" class="omni-input"
-              style="padding: 6px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-component); color: var(--text-primary); font-family: inherit;" />
+              style="padding: 6px 12px; border: 1px solid var(--border-strong); border-radius: var(--radius-md); background: var(--surface-base); color: var(--text-primary); font-family: inherit;" />
           </div>
 
           <div style="display: flex; gap: 8px; align-items: center;">
             <input type="date" id="dateTo" [ngModel]="filter_date_to()"
               (ngModelChange)="filter_date_to.set($event); apply_filters()" class="omni-input"
-              style="padding: 6px 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-component); color: var(--text-primary); font-family: inherit;" />
+              style="padding: 6px 12px; border: 1px solid var(--border-strong); border-radius: var(--radius-md); background: var(--surface-base); color: var(--text-primary); font-family: inherit;" />
           </div>
 
           <select id="department" class="department-select" [ngModel]="filter_department_id()"
@@ -329,6 +354,7 @@
       </ng-template>
     </div>
   </div>
+  }
 </div>
 
 <ng-template #loader>

@@ -1,11 +1,15 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal, OnInit } from '@angular/core';
-import { RouterLink, RouterLinkActive, Router } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
-import { API_URL, AuthService, RoleKey, ROLE_OPTIONS, hasPermission } from '@omni/auth';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { RouterLink, RouterLinkActive } from '@angular/router';
+import { AuthService, RoleKey, ROLE_OPTIONS, is_demo_mode } from '@omni/auth';
 import { IconComponent } from '@omni/ui';
-import { COMM_SUBITEMS, NavItem, navForRole } from './nav';
+import { NAV_PROVIDER, SHELL_BADGES } from './nav.token';
 
-/** Role-aware navigation sidebar — ported from Sidebar.jsx. */
+/**
+ * Product-agnostic navigation sidebar.
+ *
+ * Knows nothing about tcheck or vcheck routes: the host app supplies its nav via
+ * NAV_PROVIDER and any badge counts via SHELL_BADGES.
+ */
 @Component({
   selector: 'omni-sidebar',
   standalone: true,
@@ -26,104 +30,54 @@ import { COMM_SUBITEMS, NavItem, navForRole } from './nav';
       @for (group of groups(); track group.label) {
         <div class="section-label">{{ group.label }}</div>
         @for (item of group.items; track item.id) {
-          @if (item.expandable) {
-            <button class="nav-item" type="button" (click)="toggleComm()">
-              <omni-icon [name]="item.icon" />
-              <span>{{ item.label }}</span>
-              @if (item.badge && !commExpanded()) {
-                <span class="badge">{{ item.badge }}</span>
-              }
-              <omni-icon
-                class="chevron"
-                [name]="commExpanded() ? 'chevron-down' : 'chevron-right'"
-                [size]="14"
-              />
-            </button>
-            @if (commExpanded()) {
-              @for (sub of commSubItems; track sub.id) {
-                <a
-                  class="nav-item nav-sub"
-                  [routerLink]="'/' + sub.id"
-                  routerLinkActive="active"
-                  [routerLinkActiveOptions]="{ exact: true }"
-                >
-                  <omni-icon [name]="sub.icon" />
-                  <span>{{ sub.label }}</span>
-                </a>
-              }
+          <a class="nav-item" [routerLink]="'/' + item.id" routerLinkActive="active">
+            <omni-icon [name]="item.icon" />
+            <span>{{ item.label }}</span>
+            @if (item.badge) {
+              <span class="badge">{{ item.badge }}</span>
             }
-          } @else {
-            <a class="nav-item" [routerLink]="'/' + item.id" routerLinkActive="active">
-              <omni-icon [name]="item.icon" />
-              <span>{{ item.label }}</span>
-              @if (item.badge) {
-                <span class="badge">{{ item.badge }}</span>
-              }
-            </a>
-          }
+          </a>
         }
       }
 
-      <div class="sidebar-footer">
-        <div class="section-label" style="padding-top:0">View as</div>
-        <select [value]="role()" (change)="onRoleChange($event)">
-          @for (opt of roleOptions; track opt.value) {
-            <option [value]="opt.value">{{ opt.label }}</option>
-          }
-        </select>
-      </div>
+      @if (isDemo) {
+        <div class="sidebar-footer">
+          <div class="section-label" style="padding-top:0">View as</div>
+          <select [value]="role()" (change)="onRoleChange($event)">
+            @for (opt of roleOptions; track opt.value) {
+              <option [value]="opt.value">{{ opt.label }}</option>
+            }
+          </select>
+        </div>
+      }
     </aside>
   `,
   styleUrl: './sidebar.component.scss',
 })
-export class SidebarComponent implements OnInit {
+export class SidebarComponent {
   private readonly auth = inject(AuthService);
-  private readonly router = inject(Router);
-  private readonly http = inject(HttpClient);
-  private readonly apiUrl = inject(API_URL);
+  private readonly navForRole = inject(NAV_PROVIDER);
+  private readonly badges = inject(SHELL_BADGES, { optional: true });
 
   readonly role = this.auth.role;
-  readonly pendingUsersCount = signal(0);
-  
-  readonly groups = computed(() => {
-    const role = this.role();
-    const groupsData = navForRole(role);
-    const pendingCount = this.pendingUsersCount();
-    
-    if (pendingCount > 0 && hasPermission(role, 'approve:employees')) {
-      for (const group of groupsData) {
-        for (const item of group.items) {
-          if (item.id === 'employees') {
-            item.badge = pendingCount;
-          }
-        }
-      }
-    }
-    return groupsData;
-  });
-  
-  readonly commExpanded = signal(false);
-  readonly commSubItems: NavItem[] = COMM_SUBITEMS;
   readonly roleOptions = ROLE_OPTIONS;
 
-  ngOnInit() {
-    if (hasPermission(this.role(), 'approve:employees')) {
-      this.http.get<any[]>(`${this.apiUrl}/auth/users/pending`).subscribe({
-        next: (users) => {
-          this.pendingUsersCount.set(users?.length || 0);
-        }
-      });
-    }
-  }
+  /** The "View as" switcher is a demo affordance, not a product feature. */
+  readonly isDemo = is_demo_mode();
 
-  toggleComm(): void {
-    const opening = !this.commExpanded();
-    this.commExpanded.set(opening);
-    if (opening) this.router.navigate(['/communication']);
-  }
+  readonly groups = computed(() => {
+    const counts = this.badges?.() ?? {};
+    // Rebuild rather than mutate: the nav builder is pure, and a computed that
+    // writes into its own inputs is a debugging trap.
+    return this.navForRole(this.role()).map((group) => ({
+      ...group,
+      items: group.items.map((item) =>
+        counts[item.id] ? { ...item, badge: counts[item.id] } : item
+      ),
+    }));
+  });
 
   onRoleChange(event: Event): void {
-    const role = (event.target as HTMLSelectElement).value as RoleKey;
-    this.auth.set_role(role);
+    this.auth.set_role((event.target as HTMLSelectElement).value as RoleKey);
   }
 }

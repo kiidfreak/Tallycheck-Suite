@@ -20,6 +20,7 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "paths": {
+      "@omni/api-client": ["libs/api-client/src/index.ts"],
       "@omni/auth": ["libs/auth/src/index.ts"],
       "@omni/shell": ["libs/shell/src/index.ts"],
       "@omni/theme": ["libs/theme/src/index.ts"],

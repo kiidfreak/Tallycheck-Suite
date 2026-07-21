@@ -1,0 +1,47 @@
+// ============================================================
+//  Breakpoints — Sass API only, emits NO CSS.
+//
+//  Component stylesheets must import this file, never 'theme/src/styles':
+//
+//      @use 'theme/src/styles/breakpoints' as *;
+//
+//  Importing the full theme into a component duplicates the token block, the
+//  base reset and the Google Fonts @import into that component's stylesheet,
+//  which blows the per-component style budget.
+//
+//  CSS custom properties cannot be used inside @media, so these are Sass
+//  variables. Keep them in sync with `breakpoint` in ../tokens.ts — tokens.spec
+//  asserts it.
+// ============================================================
+
+$bp-phone: 640px; // single column, drawer nav
+$bp-tablet: 1024px; // condensed layout, sidebar becomes a drawer
+$bp-desktop: 1280px; // full layout
+
+/// Phone and below.
+@mixin phone {
+  @media (max-width: #{$bp-phone - 1px}) {
+    @content;
+  }
+}
+
+/// Tablet and below — where the sidebar becomes a drawer.
+@mixin tablet-down {
+  @media (max-width: #{$bp-tablet - 1px}) {
+    @content;
+  }
+}
+
+/// Desktop and up.
+@mixin desktop-up {
+  @media (min-width: #{$bp-tablet}) {
+    @content;
+  }
+}
+
+/// Coarse pointers (touch), regardless of viewport width.
+@mixin touch {
+  @media (hover: none) and (pointer: coarse) {
+    @content;
+  }
+}

@@ -16,7 +16,9 @@ import {
   ApexLegend,
   ApexStroke
 } from 'ng-apexcharts';
+import { chartSeries, chartTheme } from '@omni/theme';
 
+import { ActivatedRoute } from '@angular/router';
 import { AuthService } from '@omni/auth';
 import { ReportService } from './report.service';
 import { DepartmentService } from '../departments/department.service';
@@ -48,12 +50,43 @@ export type ChartOptions = {
 export class ReportsComponent implements OnInit {
   private report_service = inject(ReportService);
   private department_service = inject(DepartmentService);
+  private route = inject(ActivatedRoute);
   readonly auth = inject(AuthService);
   readonly Math = Math;
 
-  readonly is_safechild_reports = computed(() => 
-    this.auth.can('safechild:view_roster') || this.auth.role() === 'teacher'
+  readonly active_tab = signal<'hr' | 'safechild'>('hr');
+
+  readonly has_safechild_access = computed(() => 
+    this.auth.can('safechild:view_roster') || this.auth.can('safechild:drop_off') || this.auth.role() === 'teacher'
   );
+
+  readonly has_hr_access = computed(() => this.auth.can('view:reports'));
+
+  readonly is_safechild_reports = computed(() => this.active_tab() === 'safechild');
+
+  readonly is_super_admin = computed(() => this.auth.role() === 'super_admin' || this.auth.role() === 'it_admin');
+  readonly is_company_admin = computed(() => this.auth.role() === 'company_admin' || this.auth.role() === 'hr_admin' || this.auth.role() === 'department_manager');
+  readonly is_individual = computed(() => !this.is_super_admin() && !this.is_company_admin());
+
+  readonly report_title = computed(() => {
+    if (this.is_safechild_reports()) return 'Sunday School Child Attendance & Ministry Analytics';
+    if (this.is_super_admin()) return 'Organization-Wide Attendance & Multi-Tenant Analytics';
+    if (this.is_company_admin()) return 'Company & Team Attendance Reports';
+    return 'My Personal Attendance & Timesheet History';
+  });
+
+  readonly report_subtitle = computed(() => {
+    if (this.is_safechild_reports()) return 'FEM Church Karen — Children Ministry Attendance & Checkout Analytics';
+    if (this.is_super_admin()) return 'Platform-wide attendance compliance across tenant organizations and schemas';
+    if (this.is_company_admin()) return 'Real-time team presence, department attendance rates, and employee logs';
+    return 'Your personal clock-in timestamps, weekly logged hours, and timesheet records';
+  });
+
+  readonly report_scope_pill = computed(() => {
+    if (this.is_super_admin()) return { label: 'Organization Scope', icon: 'building-2', tone: 'purple' as const };
+    if (this.is_company_admin()) return { label: 'Team Scope', icon: 'users', tone: 'info' as const };
+    return { label: 'Personal Scope', icon: 'user', tone: 'success' as const };
+  });
 
   readonly safechild_metrics = signal({
     total_children: 148,
@@ -112,6 +145,14 @@ export class ReportsComponent implements OnInit {
   }
 
   ngOnInit() {
+    const routeData = this.route.snapshot.data;
+    const routePath = this.route.snapshot.routeConfig?.path;
+    if (routeData['type'] === 'safechild' || routePath === 'safechild-reports' || (this.auth.role() === 'teacher' && !this.auth.can('view:reports'))) {
+      this.active_tab.set('safechild');
+    } else {
+      this.active_tab.set('hr');
+    }
+
     this.set_default_dates();
     this.load_departments();
     this.load_dashboard_metrics();
@@ -212,7 +253,7 @@ export class ReportsComponent implements OnInit {
   }
 
   init_chart_options() {
-    const commonFont = 'Inter, sans-serif';
+    const commonFont = chartTheme.fontFamily;
 
     // 1. Attendance Trends (Line)
     this.trend_chart_options = {
@@ -228,15 +269,15 @@ export class ReportsComponent implements OnInit {
         animations: { enabled: true, speed: 800 }
       },
       dataLabels: { enabled: false },
-      stroke: { curve: 'smooth', width: 3, colors: ['#3b82f6'] },
+      stroke: { curve: 'smooth', width: 3, colors: [chartSeries[0]] },
       xaxis: {
-        labels: { style: { colors: '#64748b' } }
+        labels: { style: { colors: chartTheme.axisLabel } }
       },
       yaxis: {
-        title: { text: "Hours", style: { color: '#64748b' } },
+        title: { text: "Hours", style: { color: chartTheme.axisLabel } },
         min: 0
       },
-      grid: { borderColor: '#e2e8f0', strokeDashArray: 4, yaxis: { lines: { show: true } } },
+      grid: { borderColor: chartTheme.gridBorder, strokeDashArray: 4, yaxis: { lines: { show: true } } },
       tooltip: { theme: 'light', y: { formatter: (val: number) => val + " hrs" } }
     };
 
@@ -253,11 +294,11 @@ export class ReportsComponent implements OnInit {
       plotOptions: {
         bar: { horizontal: false, columnWidth: "45%", borderRadius: 4 }
       },
-      colors: ['#0ea5e9'],
+      colors: [chartSeries[0]],
       dataLabels: { enabled: false },
-      xaxis: { categories: [], labels: { style: { colors: '#64748b' } } },
-      yaxis: { title: { text: "Rate (%)", style: { color: '#64748b' } }, min: 0, max: 100 },
-      grid: { borderColor: '#e2e8f0', strokeDashArray: 4 },
+      xaxis: { categories: [], labels: { style: { colors: chartTheme.axisLabel } } },
+      yaxis: { title: { text: "Rate (%)", style: { color: chartTheme.axisLabel } }, min: 0, max: 100 },
+      grid: { borderColor: chartTheme.gridBorder, strokeDashArray: 4 },
       tooltip: { theme: 'light', y: { formatter: (val: number) => val + "%" } }
     };
 
@@ -274,11 +315,11 @@ export class ReportsComponent implements OnInit {
       plotOptions: {
         bar: { horizontal: true, barHeight: "50%", borderRadius: 4 }
       },
-      colors: ['#f43f5e'],
+      colors: [chartSeries[2]],
       dataLabels: { enabled: false },
-      xaxis: { title: { text: "Hours", style: { color: '#64748b' } }, labels: { style: { colors: '#64748b' } } },
-      yaxis: { categories: [], labels: { style: { colors: '#64748b' } } },
-      grid: { borderColor: '#e2e8f0', strokeDashArray: 4, xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } } },
+      xaxis: { title: { text: "Hours", style: { color: chartTheme.axisLabel } }, labels: { style: { colors: chartTheme.axisLabel } } },
+      yaxis: { categories: [], labels: { style: { colors: chartTheme.axisLabel } } },
+      grid: { borderColor: chartTheme.gridBorder, strokeDashArray: 4, xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } } },
       tooltip: { theme: 'light', y: { formatter: (val: number) => val + " hrs" } }
     };
 
@@ -295,11 +336,11 @@ export class ReportsComponent implements OnInit {
       plotOptions: {
         bar: { horizontal: true, barHeight: "50%", borderRadius: 4 }
       },
-      colors: ['#8b5cf6'],
+      colors: [chartSeries[4]],
       dataLabels: { enabled: false },
-      xaxis: { title: { text: "Hours", style: { color: '#64748b' } }, labels: { style: { colors: '#64748b' } } },
-      yaxis: { categories: [], labels: { style: { colors: '#64748b' } } },
-      grid: { borderColor: '#e2e8f0', strokeDashArray: 4, xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } } },
+      xaxis: { title: { text: "Hours", style: { color: chartTheme.axisLabel } }, labels: { style: { colors: chartTheme.axisLabel } } },
+      yaxis: { categories: [], labels: { style: { colors: chartTheme.axisLabel } } },
+      grid: { borderColor: chartTheme.gridBorder, strokeDashArray: 4, xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } } },
       tooltip: { theme: 'light', y: { formatter: (val: number) => val + " hrs" } }
     };
 
@@ -316,15 +357,15 @@ export class ReportsComponent implements OnInit {
         toolbar: { show: false },
         animations: { enabled: true, speed: 800 }
       },
-      colors: ['#10b981', '#f59e0b'],
+      colors: [chartSeries[1], chartSeries[3]],
       dataLabels: { enabled: false },
       xaxis: {
-        title: { text: "Time of Day (Hours)", style: { color: '#64748b' } },
+        title: { text: "Time of Day (Hours)", style: { color: chartTheme.axisLabel } },
         min: 6,
         max: 20,
         tickAmount: 14,
         labels: { 
-          style: { colors: '#64748b' },
+          style: { colors: chartTheme.axisLabel },
           formatter: (val: string) => {
             const num = parseFloat(val);
             if (isNaN(num)) return val;
@@ -335,11 +376,11 @@ export class ReportsComponent implements OnInit {
         }
       },
       yaxis: {
-        title: { text: "Employee", style: { color: '#64748b' } },
-        labels: { style: { colors: '#64748b' } },
+        title: { text: "Employee", style: { color: chartTheme.axisLabel } },
+        labels: { style: { colors: chartTheme.axisLabel } },
         min: 0
       },
-      grid: { borderColor: '#e2e8f0', strokeDashArray: 4 },
+      grid: { borderColor: chartTheme.gridBorder, strokeDashArray: 4 },
       tooltip: { theme: 'light' }
     };
   }
@@ -446,7 +487,7 @@ export class ReportsComponent implements OnInit {
         yaxis: {
           ...(this.person_chart_options as ChartOptions).yaxis,
           labels: {
-            style: { colors: '#64748b' },
+            style: { colors: chartTheme.axisLabel },
             formatter: (val: number) => val ? String(val).split(' ')[0] : String(val)
           }
         }
@@ -480,7 +521,7 @@ export class ReportsComponent implements OnInit {
           ...(this.bubble_chart_options as ChartOptions).yaxis,
           max: emps.length + 1,
           labels: {
-            style: { colors: '#64748b' },
+            style: { colors: chartTheme.axisLabel },
             formatter: (val: number) => {
               const i = Math.round(val) - 1;
               if (i >= 0 && i < emps.length) return emps[i].employee_name.split(' ')[0];

@@ -1,0 +1,105 @@
+# Shared primitive types.
+#
+# This file is the canonical vocabulary for the platform. Anything defined here
+# must match its runtime counterpart exactly:
+#
+#   RoleKey  ->  libs/auth/src/roles.ts   AND  backend/helpers/auth_helper.py
+#
+# Role names drifted between frontend and backend once already (the backend used
+# 'hr'/'manager' while the frontend used 'hr_admin'/'department_manager', papered
+# over by a mapping layer). Defining them once here is how that stops recurring.
+
+components:
+  schemas:
+    RoleKey:
+      type: string
+      description: |
+        A user's role. Drives both navigation and server-side authorisation.
+        Corporate, education, community and platform roles share one namespace.
+      enum:
+        - staff
+        - company_admin
+        - hr_admin
+        - department_manager
+        - school_admin
+        - lecturer
+        - teacher
+        - guardian
+        - super_admin
+        - it_admin
+
+    RoleName:
+      type: string
+      description: |
+        A role name **as emitted by the server**, which is not always canonical.
+
+        Tenants provisioned before the role rename still carry `hr` and `manager`
+        rows, and `seed_roles()` is deliberately additive — it never rewrites
+        existing rows — so those names keep coming back. The backend guards accept
+        both spellings (`helpers/auth_helper.py`), and the client normalises via
+        `parseRoleKey()`.
+
+        Use `RoleKey` when you mean the canonical set; use this when reading a
+        value off the wire.
+      enum:
+        - staff
+        - company_admin
+        - hr_admin
+        - department_manager
+        - school_admin
+        - lecturer
+        - teacher
+        - guardian
+        - super_admin
+        - it_admin
+        # Legacy, still present in older tenant schemas.
+        - hr
+        - manager
+
+    Permission:
+      type: string
+      description: A single capability. Roles map to sets of these.
+      enum:
+        - view:own_attendance
+        - view:team_attendance
+        - view:all_attendance
+        - clock:in_out
+        - edit:attendance
+        - view:employees
+        - edit:employees
+        - approve:employees
+        - view:departments
+        - edit:departments
+        - view:beacons
+        - manage:beacons
+        - view:reports
+        - export:reports
+        - safechild:view_roster
+        - safechild:drop_off
+        - safechild:pickup
+        - safechild:manage_children
+        - safechild:my_children
+        - manage:users_roles
+        - manage:settings
+        - view:audit_log
+        - manage:organizations
+
+    ShiftType:
+      type: string
+      enum: [standard, extended, flexible]
+
+    Uuid:
+      type: string
+      format: uuid
+      example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+
+    Timestamp:
+      type: string
+      format: date-time
+      description: ISO-8601. Server emits UTC.
+      example: '2026-07-20T08:30:00Z'
+
+    IsoDate:
+      type: string
+      format: date
+      example: '2026-07-20'
