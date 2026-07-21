@@ -113,6 +113,112 @@ TallyCheck uses **PostgreSQL Schema-based Isolation** (One Schema Per Tenant).
 
 ---
 
+## 🖥️ Production Server Configuration & Route Matrix
+
+### 1. Server Configuration (`Contabo VPS — 185.202.239.223`)
+- **OS**: Ubuntu 24.04.4 LTS (GNU/Linux 6.8.0-106-generic x86_64)
+- **Deployment Directory**: `/root/tallycheck` (Docker Compose production stack)
+- **Active Container Network Ports**:
+  - `0.0.0.0:8085 -> 80`: Caddy HTTP Gateway (Reverse Proxy -> Angular Intranet)
+  - `0.0.0.0:8443 -> 443`: Caddy HTTPS Gateway (Automatic Let's Encrypt TLS)
+  - `0.0.0.0:8005 -> 5000`: Python Flask API Gateway Direct Host Binding
+  - `5432`: PostgreSQL 15 Database (Internal container network `omni_intranet_db`)
+
+---
+
+### 2. Live Application Route Matrix (`http://185.202.239.223:8085`)
+
+| Route Path | Category | Allowed Roles | Description |
+| :--- | :--- | :--- | :--- |
+| `/home` | Workspace | All Roles | Dashboard greeting, personal shift clock-in/out widget, active SafeChild pickup passes, and live news feed. |
+| `/organizations` | Workspace | `super_admin`, `it_admin` | Multi-tenant tenant schema manager & organization provisioning portal. |
+| `/departments` | Workspace | `company_admin`, `hr_admin`, `department_manager`, `school_admin` | Department tree structure & manager assignments. |
+| `/attendance-records` | Workspace | All Roles | Personal attendance timesheet & logged shift history. |
+| `/team` | HR & People | `hr_admin`, `department_manager`, `company_admin` | Live team presence, real-time clock-in logs, and department member status. |
+| `/employees` | HR & People | `company_admin`, `hr_admin` | Employee directory, staff onboarding approvals, and profile management. |
+| `/beacons` | HR & People | `hr_admin`, `it_admin`, `company_admin` | BLE Beacon hardware registry, RSSI signal strength monitoring, and office zone mapping. |
+| `/reports` | HR & People | `company_admin`, `hr_admin`, `department_manager` | HR Attendance reports, real-time KPI headcount metrics, department breakdown, and ApexCharts trend analytics. |
+| `/safechild` | Sunday School | `teacher`, `guardian`, `school_admin` | SafeChild Sunday school class roster, child drop-off, single-use PIN generator, and digital pass checkout verification. |
+| `/safechild-reports` | Sunday School | `teacher`, `school_admin`, `hr_admin` | Sunday School ministry child attendance & checkout analytics dashboard. |
+| `/users-roles` | Administration | `super_admin`, `it_admin`, `company_admin` | Platform user role assignment & RBAC permissions management. |
+| `/settings` | Administration | `super_admin`, `it_admin`, `company_admin` | Global platform settings, shift cutoff windows, and notifications. |
+| `/audit` | Administration | `super_admin`, `it_admin` | Audit log trail for manual overrides, clock-in edits, and security events. |
+
+---
+
+### 3. Backend API Gateway Endpoints (`http://185.202.239.223:8005/api`)
+
+| API Route | HTTP Method | Description |
+| :--- | :--- | :--- |
+| `/api/auth/sync` | `POST` | Auth0 token sync, tenant schema resolution, and user role creation. |
+| `/api/attendance/clock-in` | `POST` | Verified clock-in via BLE beacon RSSI validation or location QR token. |
+| `/api/attendance/clock-out` | `POST` | Clock-out logging with shift hours calculation. |
+| `/api/organizations` | `GET`, `POST` | Multi-tenant organization list & tenant schema creation. |
+| `/api/departments` | `GET`, `POST` | Department list and tree structure. |
+| `/api/employees` | `GET`, `POST`, `PUT` | Staff directory list, approval, and updates. |
+| `/api/beacons` | `GET`, `POST`, `PUT` | BLE beacon registry, location assignment, and signal bounds. |
+| `/api/safechild/children` | `GET` | Sunday school class roster filtering. |
+| `/api/safechild/drop-off` | `POST` | Child drop-off registration, 4-digit PIN generation, and signed QR payload creation. |
+| `/api/safechild/pickup/verify` | `POST` | Single-use PIN pickup authorization & guardian verification. |
+| `/api/reports/dashboard` | `GET` | Real-time KPI metrics (headcount, present/absent, late arrivals). |
+| `/api/reports/employee-attendance` | `GET` | Paginated employee attendance summary reports. |
+| `/api/reports/trends` | `GET` | Daily/weekly/monthly attendance trend data for ApexCharts. |
+
+---
+
+## 🖥️ Production Server Configuration & Route Matrix
+
+### 1. Server Configuration (`Contabo VPS — 185.202.239.223`)
+- **OS**: Ubuntu 24.04.4 LTS (GNU/Linux 6.8.0-106-generic x86_64)
+- **Deployment Directory**: `/root/tallycheck` (Docker Compose production stack)
+- **Active Container Network Ports**:
+  - `0.0.0.0:8085 -> 80`: Caddy HTTP Gateway (Reverse Proxy -> Angular Intranet)
+  - `0.0.0.0:8443 -> 443`: Caddy HTTPS Gateway (Automatic Let's Encrypt TLS)
+  - `0.0.0.0:8005 -> 5000`: Python Flask API Gateway Direct Host Binding
+  - `5432`: PostgreSQL 15 Database (Internal container network `omni_intranet_db`)
+
+---
+
+### 2. Live Application Route Matrix (`http://185.202.239.223:8085`)
+
+| Route Path | Category | Allowed Roles | Description |
+| :--- | :--- | :--- | :--- |
+| `/home` | Workspace | All Roles | Dashboard greeting, personal shift clock-in/out widget, active SafeChild pickup passes, and live news feed. |
+| `/organizations` | Workspace | `super_admin`, `it_admin` | Multi-tenant tenant schema manager & organization provisioning portal. |
+| `/departments` | Workspace | `company_admin`, `hr_admin`, `department_manager`, `school_admin` | Department tree structure & manager assignments. |
+| `/attendance-records` | Workspace | All Roles | Personal attendance timesheet & logged shift history. |
+| `/team` | HR & People | `hr_admin`, `department_manager`, `company_admin` | Live team presence, real-time clock-in logs, and department member status. |
+| `/employees` | HR & People | `company_admin`, `hr_admin` | Employee directory, staff onboarding approvals, and profile management. |
+| `/beacons` | HR & People | `hr_admin`, `it_admin`, `company_admin` | BLE Beacon hardware registry, RSSI signal strength monitoring, and office zone mapping. |
+| `/reports` | HR & People | `company_admin`, `hr_admin`, `department_manager` | HR Attendance reports, real-time KPI headcount metrics, department breakdown, and ApexCharts trend analytics. |
+| `/safechild` | Sunday School | `teacher`, `guardian`, `school_admin` | SafeChild Sunday school class roster, child drop-off, single-use PIN generator, and digital pass checkout verification. |
+| `/safechild-reports` | Sunday School | `teacher`, `school_admin`, `hr_admin` | Sunday School ministry child attendance & checkout analytics dashboard. |
+| `/users-roles` | Administration | `super_admin`, `it_admin`, `company_admin` | Platform user role assignment & RBAC permissions management. |
+| `/settings` | Administration | `super_admin`, `it_admin`, `company_admin` | Global platform settings, shift cutoff windows, and notifications. |
+| `/audit` | Administration | `super_admin`, `it_admin` | Audit log trail for manual overrides, clock-in edits, and security events. |
+
+---
+
+### 3. Backend API Gateway Endpoints (`http://185.202.239.223:8005/api`)
+
+| API Route | HTTP Method | Description |
+| :--- | :--- | :--- |
+| `/api/auth/sync` | `POST` | Auth0 token sync, tenant schema resolution, and user role creation. |
+| `/api/attendance/clock-in` | `POST` | Verified clock-in via BLE beacon RSSI validation or location QR token. |
+| `/api/attendance/clock-out` | `POST` | Clock-out logging with shift hours calculation. |
+| `/api/organizations` | `GET`, `POST` | Multi-tenant organization list & tenant schema creation. |
+| `/api/departments` | `GET`, `POST` | Department list and tree structure. |
+| `/api/employees` | `GET`, `POST`, `PUT` | Staff directory list, approval, and updates. |
+| `/api/beacons` | `GET`, `POST`, `PUT` | BLE beacon registry, location assignment, and signal bounds. |
+| `/api/safechild/children` | `GET` | Sunday school class roster filtering. |
+| `/api/safechild/drop-off` | `POST` | Child drop-off registration, 4-digit PIN generation, and signed QR payload creation. |
+| `/api/safechild/pickup/verify` | `POST` | Single-use PIN pickup authorization & guardian verification. |
+| `/api/reports/dashboard` | `GET` | Real-time KPI metrics (headcount, present/absent, late arrivals). |
+| `/api/reports/employee-attendance` | `GET` | Paginated employee attendance summary reports. |
+| `/api/reports/trends` | `GET` | Daily/weekly/monthly attendance trend data for ApexCharts. |
+
+---
+
 ## 📂 Folder Structure
 
 ```

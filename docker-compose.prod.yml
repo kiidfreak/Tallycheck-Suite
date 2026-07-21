@@ -6,6 +6,8 @@
 #   8001 -> backend  (Flask, also reachable internally as backend:5000)
 # Postgres is NOT published to the host (internal network only).
 
+name: omni-intranet
+
 services:
   db:
     image: postgres:15.7

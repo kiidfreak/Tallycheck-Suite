@@ -85,7 +85,7 @@ jobs:
           password: ${{ secrets.SSH_PASSWORD }}
           port: ${{ secrets.SSH_PORT || '22' }}
           source: deploy.tar.gz
-          target: /opt/omni
+          target: /root/tallycheck
 
       - name: Deploy on server
         uses: appleboy/ssh-action@v1.2.0
@@ -106,12 +106,14 @@ jobs:
             # Make sure the daemon is up (systemd hosts).
             systemctl enable --now docker 2>/dev/null || true
 
-            cd /opt/omni
+            cd /root/tallycheck
             tar xzf deploy.tar.gz
             rm -f deploy.tar.gz
 
             # Build & (re)start the stack.
-            docker compose -f docker-compose.prod.yml --env-file .env up -d --build
+            docker compose -f docker-compose.prod.yml --env-file .env down --remove-orphans 2>/dev/null || true
+            docker rm -f omni_intranet_db omni_intranet_backend omni_intranet_frontend omni_intranet_caddy 2>/dev/null || true
+            docker compose -f docker-compose.prod.yml --env-file .env up -d --build --remove-orphans
 
             # Apply database migrations.
             docker compose -f docker-compose.prod.yml exec -T backend flask db upgrade
