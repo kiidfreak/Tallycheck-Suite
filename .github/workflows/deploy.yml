@@ -53,6 +53,7 @@ jobs:
   deploy:
     needs: build-test
     runs-on: ubuntu-latest
+    environment: Staging
     # Only deploy on real pushes / manual runs to main or dev, never on forks.
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'
     steps:
