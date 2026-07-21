@@ -30,8 +30,8 @@ services:
     container_name: omni_intranet_backend
     environment:
       - DATABASE_URL=postgresql+psycopg2://${DATABASE_USER:-omni_intranet_user}:${DATABASE_PASSWORD:-omni_intranet_pass26}@db:5432/${DATABASE_NAME:-omni_intranet}
-      - AUTH0_DOMAIN=${AUTH0_DOMAIN}
-      - AUTH0_AUDIENCE=${AUTH0_AUDIENCE}
+      - AUTH0_DOMAIN=${AUTH0_DOMAIN:-dev-tallycheck.eu.auth0.com}
+      - AUTH0_AUDIENCE=${AUTH0_AUDIENCE:-https://api.tallycheck.co.ke}
       - FRONTEND_URL=${FRONTEND_URL:-https://intranet.adept-techno.co.ke}
       - FLASK_APP=app.py
       - FLASK_DEBUG=0
@@ -58,8 +58,8 @@ services:
     image: caddy:2-alpine
     container_name: omni_intranet_caddy
     ports:
-      - "80:80"
-      - "443:443"
+      - "8085:80"
+      - "8443:443"
     environment:
       # DNS A-record for DOMAIN must point at this server before first deploy,
       # otherwise Let's Encrypt validation fails.
