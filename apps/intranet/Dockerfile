@@ -7,8 +7,8 @@ FROM node:20-alpine AS build
 WORKDIR /app
 
 # Install deps first for better layer caching.
-COPY package.json package-lock.json ./
-RUN npm ci
+COPY package.json package-lock.json .npmrc ./
+RUN npm ci --legacy-peer-deps
 
 # Bring in the rest of the workspace and build the production bundle.
 COPY . .
