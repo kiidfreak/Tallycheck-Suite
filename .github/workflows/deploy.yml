@@ -3,7 +3,7 @@ name: CI/CD — Intranet
 # Build & test in CI, then deploy the Docker stack to the server over SSH.
 on:
   push:
-    branches: [dev]
+    branches: [main, dev]
     
   workflow_dispatch: # allow manual runs from the Actions tab
 
@@ -53,8 +53,8 @@ jobs:
   deploy:
     needs: build-test
     runs-on: ubuntu-latest
-    # Only deploy on real pushes / manual runs to dev, never on forks.
-    if: github.ref == 'refs/heads/dev'
+    # Only deploy on real pushes / manual runs to main or dev, never on forks.
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'
     steps:
       - uses: actions/checkout@v4
 
